@@ -3,7 +3,23 @@ package com.gccera.myai.data.catalog
 import kotlinx.serialization.Serializable
 
 @Serializable
-enum class ModelType { CHAT, IMAGE }
+enum class ModelType {
+    CHAT,
+    /** Coding LLMs (Code tab). */
+    CODE,
+    IMAGE,
+    /** Small helper models: speech-to-text, embeddings, upscaling, background removal. */
+    TOOL,
+}
+
+/** What a TOOL model does. */
+object ToolKind {
+    const val SPEECH = "speech"
+    const val EMBEDDING = "embedding"
+    const val UPSCALE_2X = "upscale2x"
+    const val UPSCALE_4X = "upscale4x"
+    const val BACKGROUND = "background"
+}
 
 @Serializable
 data class ModelLicense(
@@ -62,6 +78,10 @@ data class ModelSpec(
     val files: List<ModelFile>,
     val image: ImageModelConfig? = null,
     val custom: Boolean = false,
+    /** LLM accepts images (LiteRT-LM vision backend), e.g. Gemma 4 E2B. */
+    val vision: Boolean = false,
+    /** For TOOL models: one of [ToolKind]. */
+    val tool: String? = null,
 ) {
     val totalBytes: Long get() = files.sumOf { it.sizeBytes }
 

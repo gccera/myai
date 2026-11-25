@@ -56,6 +56,8 @@ class LlmEngine private constructor(
         history: List<ChatTurn>,
         userText: String,
         params: GenerationParams,
+        /** Optional JPEG/PNG bytes for vision-capable models (e.g. Gemma 4 E2B). */
+        image: ByteArray? = null,
     ): Flow<String> = flow {
         val trimmed = trimHistory(history, userText, params)
         val key = "$sessionKey|$params"
@@ -70,7 +72,10 @@ class LlmEngine private constructor(
         val splitter = ChannelSplitter()
         var completed = false
         try {
-            conv.sendMessageAsync(userText, repetitionPenaltyConfig = CHAT_PENALTY).collect { msg ->
+            val message = if (image != null && spec.vision) {
+                Contents.of(Content.ImageBytes(image), Content.Text(userText))
+            } else Contents.of(userText)
+            conv.sendMessageAsync(message, repetitionPenaltyConfig = CHAT_PENALTY).collect { msg ->
                 splitter.accept(msg).forEach { emit(it) }
             }
             splitter.finish().forEach { emit(it) }
@@ -100,6 +105,22 @@ class LlmEngine private constructor(
         } finally {
             runCatching { conv.close() }
         }
+    }
+
+    /**
+     * Inline code completion. Raw fill-in-the-middle tokens were tested with the LiteRT-LM build of
+     * Qwen2.5-Coder-1.5B-Instruct and produced prose, so we ask the instruct model directly:
+     * "insert code at <CURSOR>", then strip fences and any echoed context.
+     */
+    suspend fun completeCode(prefix: String, suffix: String, language: String, maxLines: Int = 3): String {
+        val before = prefix.takeLast(1500)
+        val after = suffix.take(500)
+        val raw = complete(
+            systemPrompt = CODE_COMPLETION_SYSTEM,
+            prompt = "Language: $language\n```\n$before<CURSOR>$after\n```",
+            params = GenerationParams(CODE_COMPLETION_SYSTEM, temperature = 0.1f, topK = 1, topP = 1f, maxTokens = 64),
+        )
+        return cleanCompletion(raw, before, after, maxLines)
     }
 
     private fun newConversation(params: GenerationParams, history: List<ChatTurn>): Conversation {
@@ -157,7 +178,10 @@ class LlmEngine private constructor(
             val config = EngineConfig(
                 modelPath = modelPath,
                 backend = if (backend == LlmBackend.GPU) Backend.GPU() else Backend.CPU(),
+                // Vision models need an image encoder backend; the CPU one works everywhere.
+                visionBackend = if (spec.vision) Backend.CPU() else null,
                 maxNumTokens = spec.contextTokens,
+                maxNumImages = if (spec.vision) 1 else null,
                 cacheDir = cacheDir,
             )
             val engine = Engine(config)
@@ -168,6 +192,26 @@ class LlmEngine private constructor(
                 throw t
             }
             return LlmEngine(engine, spec, if (backend == LlmBackend.GPU) "LiteRT-LM GPU" else "LiteRT-LM CPU")
+        }
+
+        private const val CODE_COMPLETION_SYSTEM =
+            "You are a code completion engine. The user shows code with a <CURSOR> marker. Reply with ONLY " +
+                "the code to insert at <CURSOR> (at most 3 lines) so the code is correct. No explanations, " +
+                "no markdown, and do not repeat code that is already before or after the cursor."
+
+        /** Removes fences/think tags, the <CURSOR> marker, and any text the model echoed from the context. */
+        fun cleanCompletion(raw: String, before: String, after: String, maxLines: Int): String {
+            var s = raw.replace(Regex("(?s)<think>.*?</think>"), "")
+            s = Regex("(?s)```[a-zA-Z0-9_+-]*\\n?(.*?)(```|$)").find(s)?.groupValues?.get(1) ?: s
+            s = s.replace("<CURSOR>", "").trimEnd()
+            // Drop an echoed copy of the current line's beginning.
+            val lineStart = before.substringAfterLast('\n')
+            if (lineStart.isNotBlank() && s.startsWith(lineStart)) s = s.removePrefix(lineStart)
+            else if (lineStart.isNotBlank() && s.trimStart().startsWith(lineStart.trim())) s = s.trimStart().removePrefix(lineStart.trim())
+            // Stop where the model starts repeating the code after the cursor.
+            val nextLine = after.trimStart('\n').substringBefore('\n').trim()
+            val lines = s.lines().takeWhile { nextLine.isEmpty() || it.trim() != nextLine }
+            return lines.take(maxLines).joinToString("\n").trimEnd()
         }
 
         private val CHAT_PENALTY = RepetitionPenaltyConfig(repetitionPenalty = 1.05f)

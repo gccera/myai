@@ -24,7 +24,8 @@ import javax.inject.Singleton
 sealed interface ImageGenState {
     data object Idle : ImageGenState
     data class Loading(val modelName: String) : ImageGenState
-    data class Running(val step: Int, val total: Int, val startedAt: Long) : ImageGenState
+    /** [stage] describes the current phase; [secPerStep] is the latest UNet step duration. */
+    data class Running(val step: Int, val total: Int, val startedAt: Long, val stage: String = "", val secPerStep: Float? = null) : ImageGenState
     data class Done(val imageId: Long, val path: String, val durationMs: Long) : ImageGenState
     data class Error(val message: String) : ImageGenState
     data object Cancelled : ImageGenState
@@ -68,7 +69,20 @@ class ImageGenerationController @Inject constructor(
                     _state.value = ImageGenState.Running(0, params.steps, started)
                     try {
                         runInterruptible(Dispatchers.Default) {
-                            p.generate(params) { step, total -> _state.value = ImageGenState.Running(step, total, started) }
+                            var stage = ""
+                            var lastStepAt = 0L
+                            var perStep: Float? = null
+                            p.generate(params, onStage = { st ->
+                                stage = st
+                                if (st == "Denoising…") lastStepAt = System.currentTimeMillis()
+                                val cur = _state.value as? ImageGenState.Running
+                                _state.value = ImageGenState.Running(cur?.step ?: 0, params.steps, started, st, perStep)
+                            }) { step, total ->
+                                val now = System.currentTimeMillis()
+                                if (step > 0 && lastStepAt > 0) perStep = (now - lastStepAt) / 1000f
+                                lastStepAt = now
+                                _state.value = ImageGenState.Running(step, total, started, stage, perStep)
+                            }
                         }
                     } finally { pipeline = null }
                 }

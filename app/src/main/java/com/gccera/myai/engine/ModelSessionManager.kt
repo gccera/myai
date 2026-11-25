@@ -108,11 +108,11 @@ class ModelSessionManager @Inject constructor(
         (loaded as? ImageLoaded)?.let { if (it.spec.id == spec.id) return@withContext it.pipeline }
         closeLoaded()
         _state.value = SessionState.Loading(spec)
-        // Phones under ~10 GB RAM load the three SD networks one after another and free each after
-        // use (slower, but peak memory is roughly one network instead of all three).
-        val lowMemory = device.inspect().ramClassGb < 12
+        // 12 GB+ phones keep the SD networks loaded between images; others load each network for
+        // its phase only. Either way guidance runs as two batch-1 passes (see the pipeline).
+        val keepLoaded = device.inspect().ramClassGb >= 12
         val pipeline = try {
-            StableDiffusionPipeline(spec, storage.dirFor(spec), lowMemory)
+            StableDiffusionPipeline(spec, storage.dirFor(spec), keepLoaded)
         } catch (t: Throwable) { failLoad(spec, t) }
         loaded = ImageLoaded(spec, pipeline)
         pipeline

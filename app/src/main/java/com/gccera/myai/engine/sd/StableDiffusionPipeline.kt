@@ -7,6 +7,7 @@ import ai.onnxruntime.OrtSession
 import ai.onnxruntime.TensorInfo
 import com.gccera.myai.data.catalog.ImageModelConfig
 import com.gccera.myai.data.catalog.ModelSpec
+import com.gccera.myai.engine.tools.CpuInfo
 import java.io.File
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -35,14 +36,16 @@ data class ImageGenParams(
  *
  * - fp16 and fp32 exports both work: tensor types are read from each model's inputs.
  * - SD 1.x (768-d CLIP) and SD 2.x / Turbo (1024-d OpenCLIP) work: dims come from the model.
- * - [lowMemory]: each network is loaded only for its phase and closed afterwards, so the peak is
- *   roughly the UNet alone (~1.7 GB for fp16 SD 1.5) instead of all three networks.
+ * - Classifier-free guidance always runs as two batch-1 UNet passes with ORT's memory arena off:
+ *   peak ≈ 4.5 GB at 512 px (a batch-2 pass exceeded 6 GB and made a 12 GB phone thrash).
+ * - [keepLoaded]: keep the three networks loaded between images (high-RAM phones). Otherwise each
+ *   network is loaded only for its phase and closed afterwards.
  * - [cancel] terminates even an in-flight UNet call via ORT RunOptions.
  */
 class StableDiffusionPipeline(
     spec: ModelSpec,
     private val dir: File,
-    private val lowMemory: Boolean,
+    private val keepLoaded: Boolean,
 ) : AutoCloseable {
 
     private val cfg: ImageModelConfig = spec.image ?: ImageModelConfig()
@@ -61,16 +64,16 @@ class StableDiffusionPipeline(
         listOf("text_encoder/model.onnx", "unet/model.onnx", "vae_decoder/model.onnx").forEach {
             require(File(dir, it).exists()) { "Missing $it — re-download the model." }
         }
-        if (!lowMemory) { textEncoder(); unet(); vae() }
+        // Networks are created lazily on first use (also on high-RAM phones) so loading shows as a stage.
     }
 
     private fun options() = OrtSession.SessionOptions().apply {
-        // Use the big cores; more threads than ~4-6 usually slows phones down (little cores, heat).
-        setIntraOpNumThreads(Runtime.getRuntime().availableProcessors().coerceIn(1, 6))
+        // Only the performance cores: mixing in efficiency cores makes every op wait for the slowest thread.
+        setIntraOpNumThreads(CpuInfo.performanceCores())
         setOptimizationLevel(OrtSession.SessionOptions.OptLevel.EXTENDED_OPT)
-        // Low-memory mode: don't let ORT's arena keep (and grow) multi-GB activation buffers between runs.
-        setMemoryPatternOptimization(!lowMemory)
-        setCPUArenaAllocator(!lowMemory)
+        // Don't let ORT's arena keep (and grow) multi-GB activation buffers between runs.
+        setMemoryPatternOptimization(false)
+        setCPUArenaAllocator(false)
     }
 
     // Created from a file path so ONNX "external data" (e.g. unet/weights.pb) resolves next to it.
@@ -89,7 +92,7 @@ class StableDiffusionPipeline(
      * @param onProgress (completedSteps, totalSteps) — UNet steps; text encoding and VAE decoding are
      *   reported as step 0 and step == total respectively.
      */
-    fun generate(p: ImageGenParams, onProgress: (Int, Int) -> Unit): RgbImage {
+    fun generate(p: ImageGenParams, onStage: (String) -> Unit = {}, onProgress: (Int, Int) -> Unit): RgbImage {
         cancelled = false
         val ro = OrtSession.RunOptions().also { runOptions = it }
         try {
@@ -98,16 +101,17 @@ class StableDiffusionPipeline(
             onProgress(0, p.steps)
 
             // 1) Text → embeddings ([uncond, cond] when using classifier-free guidance).
+            if (textEncoder == null) onStage("Loading text encoder…")
             val te = textEncoder()
+            onStage("Encoding prompt…")
             val cond = encodeText(te, p.prompt, ro)
             val uncond = if (useCfg) encodeText(te, p.negativePrompt, ro) else null
-            if (lowMemory) { te.close(); textEncoder = null }
+            if (!keepLoaded) { te.close(); textEncoder = null }
             checkCancelled()
             val embDim = cond.size / 77
-            // High-RAM: one batch-2 UNet call per step ([uncond, cond]).
-            // Low-RAM: two batch-1 calls — same result, about half the peak activation memory
-            // (at 512 px a batch-2 pass needs >6 GB on CPU).
-            val batched = useCfg && !lowMemory
+            // Two batch-1 UNet calls per step instead of one batch-2 call: same result, about half the
+            // peak activation memory (a batch-2 pass at 512 px needs >6 GB on CPU).
+            val batched = false
 
             // 2) Denoising loop.
             val scheduler = EulerAncestralScheduler(p.steps, cfg.timestepSpacing, cfg.stepsOffset, cfg.predictionType)
@@ -115,7 +119,9 @@ class StableDiffusionPipeline(
             val lh = p.height / 8; val lw = p.width / 8
             val latentSize = 4 * lh * lw
             val latents = FloatArray(latentSize) { (rng.nextGaussian() * scheduler.initNoiseSigma).toFloat() }
+            if (unet == null) onStage("Loading image model…")
             val un = unet()
+            onStage("Denoising…")
             val inNames = un.inputNames.toList()
             val sampleName = inNames.first { it.contains("sample") && !it.contains("hidden") }
             val timeName = inNames.first { it.contains("time") }
@@ -167,17 +173,18 @@ class StableDiffusionPipeline(
             } finally {
                 hiddenTensors.forEach { it.close() }
             }
-            if (lowMemory) { un.close(); unet = null }
+            if (!keepLoaded) { un.close(); unet = null }
             checkCancelled()
 
             // 3) Latents → pixels.
+            onStage("Decoding image…")
             val v = vae()
             val inv = 1f / cfg.vaeScalingFactor
             val vaeIn = v.inputNames.first()
             val pixels = tensor(v, vaeIn, FloatArray(latentSize) { latents[it] * inv }, longArrayOf(1, 4, lh.toLong(), lw.toLong())).use { lat ->
                 v.run(mapOf(vaeIn to lat), ro).use { out -> readFloats(out[0] as OnnxTensor) }
             }
-            if (lowMemory) { v.close(); vae = null }
+            if (!keepLoaded) { v.close(); vae = null }
             return toImage(pixels, p.width, p.height)
         } finally {
             runOptions = null

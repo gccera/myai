@@ -145,7 +145,11 @@ fun ImageScreen(onOpenModels: () -> Unit, vm: ImageViewModel = hiltViewModel()) 
                 is ImageGenState.Running -> {
                     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
                     LaunchedEffect(s.startedAt) { while (true) { now = System.currentTimeMillis(); delay(1000) } }
-                    val label = if (s.step >= s.total) "Decoding image…" else "Step ${s.step} of ${s.total}"
+                    val label = when {
+                        s.step >= s.total -> "Decoding image…"
+                        s.step == 0 -> s.stage.ifEmpty { "Starting…" }
+                        else -> "Step ${s.step} of ${s.total}" + (s.secPerStep?.let { " · %.1fs/step".format(it) } ?: "")
+                    }
                     Progress("$label · ${formatDuration(now - s.startedAt)}", s.step.toFloat() / s.total, onCancel = vm::cancel)
                 }
                 else -> Button(onClick = vm::generate, enabled = !improving && form.prompt.isNotBlank(), modifier = Modifier.fillMaxWidth()) {

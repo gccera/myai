@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
+    alias(libs.plugins.chaquopy) // Embedded Python for the Code tab's "Run" (Phase 3)
 }
 
 // Release signing is read from keystore.properties (never committed). See README "Release build".
@@ -56,6 +57,8 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        // JGit and pdfbox use java.time / newer java.util APIs; desugaring backports them to API 26.
+        isCoreLibraryDesugaringEnabled = true
     }
 
     buildFeatures {
@@ -119,8 +122,31 @@ dependencies {
 
     implementation(libs.markdown.renderer.m3)
 
+    // Phase 2: documents, OCR, translation
+    implementation(libs.pdfbox.android)
+    implementation(libs.mlkit.text.recognition)
+    implementation(libs.mlkit.translate)
+    implementation(libs.mlkit.language.id)
+
+    // Phase 3: code editor, git, diff, preview
+    implementation(platform(libs.sora.bom))
+    implementation(libs.sora.editor)
+    implementation(libs.sora.textmate)
+    implementation(libs.jgit)
+    implementation(libs.diff.utils)
+    implementation(libs.androidx.webkit)
+    implementation(libs.androidx.documentfile)
+    coreLibraryDesugaring(libs.desugar.jdk.libs)
+
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.okhttp.mockwebserver)
     androidTestImplementation(libs.androidx.junit)
+}
+
+// Embedded CPython (Chaquopy, MIT licence). Only the standard library is bundled; no pip packages.
+chaquopy {
+    defaultConfig {
+        version = "3.13"
+    }
 }
