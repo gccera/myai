@@ -11,3 +11,8 @@
 *.jks
 *.keystore
 keystore.properties
+
+# Build outputs (APKs/AABs are delivered separately, never committed)
+*.apk
+*.aab
+*.idsig
