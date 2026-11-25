@@ -1,0 +1,199 @@
+{
+  "_comment": "Configurable model list. Each model is one or more files downloaded from Hugging Face into app-private storage and verified with SHA-256. Add your own entries here, or use 'Add custom model' in the app. 'revision' pins an exact commit so hashes stay valid.",
+  "version": 1,
+  "models": [
+    {
+      "id": "qwen3-0.6b",
+      "type": "CHAT",
+      "name": "Qwen3 0.6B",
+      "description": "Tiny and fast. Good for basic chat on low-RAM phones.",
+      "params": "0.6B · int4",
+      "minRamGb": 3,
+      "recommendedRamGb": 4,
+      "contextTokens": 2048,
+      "license": {
+        "id": "apache-2.0",
+        "name": "Apache License 2.0",
+        "url": "https://huggingface.co/Qwen/Qwen3-0.6B/blob/main/LICENSE",
+        "commercialUse": true
+      },
+      "files": [
+        {
+          "path": "Qwen3-0.6B_dynamic_wi4b32_afp32.litertlm",
+          "url": "https://huggingface.co/litert-community/Qwen3-0.6B/resolve/8d42ab5f1db14cad987fac57aeb17d070f9e180d/Qwen3-0.6B_dynamic_wi4b32_afp32.litertlm",
+          "sizeBytes": 343490560,
+          "sha256": "bf1aba9ce8d963124407353c6aa4cbf72eba78db21ae133de983eac672ce83e0"
+        }
+      ]
+    },
+    {
+      "id": "gemma3-1b-it",
+      "type": "CHAT",
+      "name": "Gemma 3 1B Instruct",
+      "description": "Google's compact chat model. Balanced quality and speed.",
+      "params": "1B · int4",
+      "minRamGb": 4,
+      "recommendedRamGb": 6,
+      "contextTokens": 4096,
+      "requiresHfToken": true,
+      "license": {
+        "id": "gemma-terms",
+        "name": "Gemma Terms of Use",
+        "url": "https://ai.google.dev/gemma/terms",
+        "commercialUse": true,
+        "attribution": "Gemma is provided under and subject to the Gemma Terms of Use found at gemma.ai/resources/terms"
+      },
+      "files": [
+        {
+          "path": "gemma3-1b-it-int4.litertlm",
+          "url": "https://huggingface.co/litert-community/Gemma3-1B-IT/resolve/a9bd85643f05cdb1e5cd5af7ba4e74b0e8210ca0/gemma3-1b-it-int4.litertlm",
+          "sizeBytes": 584417280,
+          "sha256": "1325ae366d31950f137c9c357b9fa89448b176d76998180c08ceaca78bba98be"
+        }
+      ]
+    },
+    {
+      "id": "qwen2.5-1.5b-instruct",
+      "type": "CHAT",
+      "name": "Qwen2.5 1.5B Instruct",
+      "description": "Stronger reasoning and multilingual chat. Needs a mid-range phone.",
+      "params": "1.5B · int8",
+      "minRamGb": 6,
+      "recommendedRamGb": 8,
+      "contextTokens": 4096,
+      "license": {
+        "id": "apache-2.0",
+        "name": "Apache License 2.0",
+        "url": "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct/blob/main/LICENSE",
+        "commercialUse": true
+      },
+      "files": [
+        {
+          "path": "Qwen2.5-1.5B-Instruct_multi-prefill-seq_q8_ekv4096.litertlm",
+          "url": "https://huggingface.co/litert-community/Qwen2.5-1.5B-Instruct/resolve/60257f9f1d00ca1f24cc5ce3b829b4139be1ca2b/Qwen2.5-1.5B-Instruct_multi-prefill-seq_q8_ekv4096.litertlm",
+          "sizeBytes": 1597922856,
+          "sha256": "c4a9b7289365ab80fe599b844b77ad253eb3c53fb0e5d963d699146a6f01255e"
+        }
+      ]
+    },
+    {
+      "id": "llama3.2-3b",
+      "type": "CHAT",
+      "name": "Llama 3.2 3B Instruct",
+      "description": "Meta's 3B model. High quality; flagship phones.",
+      "params": "3B · int4",
+      "minRamGb": 8,
+      "recommendedRamGb": 12,
+      "contextTokens": 4096,
+      "requiresHfToken": true,
+      "license": {
+        "id": "llama-3.2",
+        "name": "Llama 3.2 Community License",
+        "url": "https://www.llama.com/llama3_2/license/",
+        "commercialUse": true,
+        "attribution": "Built with Llama. Llama 3.2 is licensed under the Llama 3.2 Community License, Copyright © Meta Platforms, Inc. All Rights Reserved."
+      },
+      "files": [
+        {
+          "path": "llama3_2_3b_mixed_int4_gpu.litertlm",
+          "url": "https://huggingface.co/litert-community/Llama-3.2-3B/resolve/401735124eace78bbaee7bbf8f95581ab2ee63af/llama3_2_3b_mixed_int4_gpu.litertlm",
+          "sizeBytes": 2207940608,
+          "sha256": "63419d689ef141cc77d6ab5739f27426d779e1165546a4904edefa9fc36fea51"
+        }
+      ]
+    },
+    {
+      "id": "gemma4-e2b-it",
+      "type": "CHAT",
+      "name": "Gemma 4 E2B Instruct",
+      "description": "Newest Gemma, efficient 2B-effective model. Best quality for 8 GB+ phones.",
+      "params": "E2B · mixed int4",
+      "minRamGb": 8,
+      "recommendedRamGb": 12,
+      "contextTokens": 4096,
+      "license": {
+        "id": "apache-2.0",
+        "name": "Apache License 2.0",
+        "url": "https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm",
+        "commercialUse": true
+      },
+      "files": [
+        {
+          "path": "gemma-4-E2B-it.litertlm",
+          "url": "https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/2e12bfd869b2962984f97a1f2a26807316d534cc/gemma-4-E2B-it.litertlm",
+          "sizeBytes": 2588147712,
+          "sha256": "181938105e0eefd105961417e8da75903eacda102c4fce9ce90f50b97139a63c"
+        }
+      ]
+    },
+    {
+      "id": "sd15-onnx-fp16",
+      "type": "IMAGE",
+      "name": "Stable Diffusion 1.5",
+      "description": "Classic text-to-image model (ONNX, fp16). ~1-4 min per 512px image on a recent phone.",
+      "params": "0.9B · fp16",
+      "minRamGb": 6,
+      "recommendedRamGb": 8,
+      "image": {
+        "family": "SD1",
+        "defaultSize": 512,
+        "defaultSteps": 20,
+        "defaultGuidance": 7.5,
+        "supportsNegativePrompt": true,
+        "timestepSpacing": "leading",
+        "stepsOffset": 1
+      },
+      "license": {
+        "id": "creativeml-openrail-m",
+        "name": "CreativeML Open RAIL-M",
+        "url": "https://huggingface.co/spaces/CompVis/stable-diffusion-license",
+        "commercialUse": true,
+        "attribution": "Stable Diffusion v1.5 is licensed under the CreativeML Open RAIL-M license, which includes use-based restrictions that also apply to you as a user of this app."
+      },
+      "files": [
+        {
+          "path": "text_encoder/model.onnx",
+          "url": "https://huggingface.co/nmkd/stable-diffusion-1.5-onnx-fp16/resolve/38dacf2c14c89e3538b5e32da888eb9c46e0e1bf/text_encoder/model.onnx",
+          "sizeBytes": 246476214,
+          "sha256": "da837d5d2df136df347d0e8d7114d295d634d32b37b77be60418a7117d1f669b"
+        },
+        {
+          "path": "unet/model.onnx",
+          "url": "https://huggingface.co/nmkd/stable-diffusion-1.5-onnx-fp16/resolve/38dacf2c14c89e3538b5e32da888eb9c46e0e1bf/unet/model.onnx",
+          "sizeBytes": 1217704,
+          "sha256": "879e4274bfc862c7733ed2b673600be8f9b78b45184b5702100f89508e69ca34"
+        },
+        {
+          "path": "unet/weights.pb",
+          "url": "https://huggingface.co/nmkd/stable-diffusion-1.5-onnx-fp16/resolve/38dacf2c14c89e3538b5e32da888eb9c46e0e1bf/unet/weights.pb",
+          "sizeBytes": 1718976000,
+          "sha256": "491609db06ac0bd6893969cda4caa3475a9a14a7deb5ee4f11a4371c6187155a"
+        },
+        {
+          "path": "vae_decoder/model.onnx",
+          "url": "https://huggingface.co/nmkd/stable-diffusion-1.5-onnx-fp16/resolve/38dacf2c14c89e3538b5e32da888eb9c46e0e1bf/vae_decoder/model.onnx",
+          "sizeBytes": 99094195,
+          "sha256": "ff78d16a387ece4e102e2548a8dbd93f048269bc23ac65fac3acff0ba88b6161"
+        },
+        {
+          "path": "tokenizer/vocab.json",
+          "url": "https://huggingface.co/nmkd/stable-diffusion-1.5-onnx-fp16/resolve/38dacf2c14c89e3538b5e32da888eb9c46e0e1bf/tokenizer/vocab.json",
+          "sizeBytes": 1059962,
+          "sha256": "e089ad92ba36837a0d31433e555c8f45fe601ab5c221d4f607ded32d9f7a4349"
+        },
+        {
+          "path": "tokenizer/merges.txt",
+          "url": "https://huggingface.co/nmkd/stable-diffusion-1.5-onnx-fp16/resolve/38dacf2c14c89e3538b5e32da888eb9c46e0e1bf/tokenizer/merges.txt",
+          "sizeBytes": 524619,
+          "sha256": "9fd691f7c8039210e0fced15865466c65820d09b63988b0174bfe25de299051a"
+        },
+        {
+          "path": "tokenizer/special_tokens_map.json",
+          "url": "https://huggingface.co/nmkd/stable-diffusion-1.5-onnx-fp16/resolve/38dacf2c14c89e3538b5e32da888eb9c46e0e1bf/tokenizer/special_tokens_map.json",
+          "sizeBytes": 472,
+          "sha256": "c4864a9376a8401918425bed71fc14fc0e81f9b59ec45c1cf96cccb2df508eac"
+        }
+      ]
+    }
+  ]
+}

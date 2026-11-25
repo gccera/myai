@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- Generated images (app-private). Exposed only via explicit Share actions. -->
+    <files-path name="images" path="images/" />
+    <cache-path name="shared" path="shared/" />
+</paths>

@@ -1,0 +1,71 @@
+# Blocked terms for chat and image prompts (Google Play AI-Generated Content policy).
+# One term or phrase per line. Matching is case-insensitive, ignores accents and common
+# character substitutions (e.g. "3" -> "e"), and matches whole words/phrases only.
+# Lines starting with '#' are comments. Extend this list for your market and audience.
+
+# --- Sexual content involving minors (zero tolerance)
+child porn
+child pornography
+cp porn
+csam
+loli
+lolicon
+shota
+shotacon
+underage sex
+underage nude
+preteen nude
+minor nude
+jailbait
+pedo
+pedophile
+pedophilia
+
+# --- Explicit sexual content / non-consensual imagery
+porn
+pornographic
+hentai
+nude
+nudes
+naked
+nsfw
+explicit sex
+sex scene
+genitals
+penis
+vagina
+blowjob
+gangbang
+deepfake nude
+undress her
+undress him
+revenge porn
+rape
+non-consensual
+
+# --- Violent extremism & mass-harm instructions
+make a bomb
+build a bomb
+pipe bomb
+nerve agent
+sarin
+anthrax
+ricin
+bioweapon
+chemical weapon
+mass shooting
+school shooting
+terrorist attack
+behead
+beheading
+
+# --- Self-harm encouragement
+how to kill myself
+suicide method
+kill myself
+
+# --- Gore
+gore
+dismember
+dismemberment
+mutilation

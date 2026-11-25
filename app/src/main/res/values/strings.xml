@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Change the app name here (replace "[APP NAME]"). -->
+    <string name="app_name">MyAI</string>
+    <!-- Where users' optional "send report" emails go. Replace with your support address. -->
+    <string name="report_email">support@example.com</string>
+    <!-- Public URL of your privacy policy (required by Google Play). The same text is bundled in-app. -->
+    <string name="privacy_policy_url">https://example.com/privacy</string>
+    <string name="download_channel_name">Model downloads</string>
+</resources>
