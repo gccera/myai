@@ -90,12 +90,32 @@ fun ToolsScreen(onOpenGallery: () -> Unit, onOpenImage: (Long) -> Unit, vm: Tool
             Modifier.padding(pad).fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            OcrCard(vm)
-            TranslateCard(vm)
+            val consent by vm.mlKitConsent.collectAsStateWithLifecycle()
+            if (consent) {
+                OcrCard(vm)
+                TranslateCard(vm)
+            } else MlKitConsentCard(onAccept = vm::giveMlKitConsent)
             ImageToolsCard(vm, onOpenImage)
             DocumentsCard(vm)
-            Text("Text recognition and translation use Google ML Kit on-device. Translation language packs are downloaded once from Google.",
-                style = MaterialTheme.typography.bodySmall)
+            if (consent) TextButton(onClick = vm::revokeMlKitConsent) { Text("Turn off Google ML Kit features") }
+        }
+    }
+}
+
+/** Shown before ML Kit is ever started: Google's SDK reports usage metrics (not content). */
+@Composable
+private fun MlKitConsentCard(onAccept: () -> Unit) {
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            SectionTitle(Icons.Default.Translate, "Text from photos & translation")
+            Text(
+                "These two features use Google ML Kit. Your photos and text are processed on this phone and are not sent anywhere, " +
+                    "but Google's ML Kit SDK sends Google anonymous usage and performance metrics (device model, OS version, " +
+                    "app info). Translation language packs (~30 MB each) are downloaded once from Google. " +
+                    "Everything else in this app works without ML Kit.",
+                style = MaterialTheme.typography.bodySmall,
+            )
+            Button(onClick = onAccept) { Text("Enable ML Kit features") }
         }
     }
 }

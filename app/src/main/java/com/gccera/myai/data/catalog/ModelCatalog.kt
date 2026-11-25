@@ -82,6 +82,11 @@ data class ModelSpec(
     val vision: Boolean = false,
     /** For TOOL models: one of [ToolKind]. */
     val tool: String? = null,
+    /**
+     * Built-in chat template to use instead of the one inside the model file ("chatml"). Needed for
+     * conversions whose embedded template can't handle LiteRT-LM's structured message content.
+     */
+    val chatTemplate: String? = null,
 ) {
     val totalBytes: Long get() = files.sumOf { it.sizeBytes }
 

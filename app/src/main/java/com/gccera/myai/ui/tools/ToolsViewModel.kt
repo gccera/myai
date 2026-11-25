@@ -13,6 +13,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -35,7 +36,12 @@ class ToolsViewModel @Inject constructor(
     private val imageTools: ImageToolsController,
     private val documents: DocumentRepository,
     private val filter: ContentFilter,
+    private val settings: com.gccera.myai.data.settings.SettingsRepository,
 ) : ViewModel() {
+    val mlKitConsent = settings.settings.map { it.mlKitConsent }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    fun giveMlKitConsent() = viewModelScope.launch { settings.update { it.copy(mlKitConsent = true) }; refreshLanguages() }
+    fun revokeMlKitConsent() = viewModelScope.launch { settings.update { it.copy(mlKitConsent = false) } }
+
     val languages = mlkit.languages()
 
     private val _ocr = MutableStateFlow<String?>(null)
@@ -54,7 +60,7 @@ class ToolsViewModel @Inject constructor(
     private val _events = Channel<String>(Channel.BUFFERED)
     val events = _events.receiveAsFlow()
 
-    init { refreshLanguages() }
+    init { viewModelScope.launch { if (settings.current().mlKitConsent) refreshLanguages() } }
 
     fun extractText(uri: Uri) = viewModelScope.launch {
         _ocrBusy.value = true

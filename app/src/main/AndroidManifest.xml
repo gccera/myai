@@ -68,6 +68,13 @@
                 tools:node="remove" />
         </provider>
 
+        <!-- Google ML Kit (OCR/translation) is NOT started at app launch: it reports usage metrics to
+             Google, so it is initialised only after the user consents (MlKitRepository.ensureStarted). -->
+        <provider
+            android:name="com.google.mlkit.common.internal.MlKitInitProvider"
+            android:authorities="${applicationId}.mlkitinitprovider"
+            tools:node="remove" />
+
         <service
             android:name="androidx.work.impl.foreground.SystemForegroundService"
             android:foregroundServiceType="dataSync"

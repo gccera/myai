@@ -28,6 +28,11 @@ data class GenerationParams(
     val topK: Int,
     val topP: Float,
     val maxTokens: Int,
+    /**
+     * Penalises repeating tokens (also those in the prompt). Helps small chat models avoid loops, but
+     * must be off (null) for code: editing code means reproducing most of the input.
+     */
+    val repetitionPenalty: Float? = 1.05f,
 )
 
 /**
@@ -75,7 +80,8 @@ class LlmEngine private constructor(
             val message = if (image != null && spec.vision) {
                 Contents.of(Content.ImageBytes(image), Content.Text(userText))
             } else Contents.of(userText)
-            conv.sendMessageAsync(message, repetitionPenaltyConfig = CHAT_PENALTY).collect { msg ->
+            val penalty = params.repetitionPenalty?.let { RepetitionPenaltyConfig(repetitionPenalty = it) }
+            conv.sendMessageAsync(message, repetitionPenaltyConfig = penalty).collect { msg ->
                 splitter.accept(msg).forEach { emit(it) }
             }
             splitter.finish().forEach { emit(it) }
@@ -97,7 +103,8 @@ class LlmEngine private constructor(
         return try {
             val splitter = ChannelSplitter()
             val sb = StringBuilder()
-            conv.sendMessageAsync(prompt, repetitionPenaltyConfig = ONE_SHOT_PENALTY).collect { m ->
+            val penalty = params.repetitionPenalty?.let { RepetitionPenaltyConfig(repetitionPenalty = it) }
+            conv.sendMessageAsync(prompt, repetitionPenaltyConfig = penalty).collect { m ->
                 splitter.accept(m).forEach(sb::append)
             }
             splitter.finish().forEach(sb::append)
@@ -118,7 +125,7 @@ class LlmEngine private constructor(
         val raw = complete(
             systemPrompt = CODE_COMPLETION_SYSTEM,
             prompt = "Language: $language\n```\n$before<CURSOR>$after\n```",
-            params = GenerationParams(CODE_COMPLETION_SYSTEM, temperature = 0.1f, topK = 1, topP = 1f, maxTokens = 64),
+            params = GenerationParams(CODE_COMPLETION_SYSTEM, temperature = 0.1f, topK = 1, topP = 1f, maxTokens = 64, repetitionPenalty = null),
         )
         return CodeCompletionText.clean(raw, before, after, maxLines)
     }
@@ -138,6 +145,7 @@ class LlmEngine private constructor(
             // on later turns, the parser can route the whole answer into the "thought" channel.
             // Direct answers are faster on a phone and parse reliably.
             thinkingConfig = ThinkingConfig(enableThinking = false),
+            chatTemplate = ChatTemplates.byName(spec.chatTemplate),
         )
         return engine.createConversation(config)
     }
@@ -199,8 +207,6 @@ class LlmEngine private constructor(
                 "the code to insert at <CURSOR> (at most 3 lines) so the code is correct. No explanations, " +
                 "no markdown, and do not repeat code that is already before or after the cursor."
 
-        private val CHAT_PENALTY = RepetitionPenaltyConfig(repetitionPenalty = 1.05f)
-        private val ONE_SHOT_PENALTY = RepetitionPenaltyConfig(repetitionPenalty = 1.15f)
 
         internal fun Message.plainText(): String =
             contents.contents.filterIsInstance<Content.Text>().joinToString("") { it.text }

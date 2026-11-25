@@ -38,7 +38,26 @@ class SettingsViewModel @Inject constructor(
     private val catalog: ModelCatalogRepository,
     private val reports: ReportRepository,
     private val sessions: ModelSessionManager,
+    private val secrets: com.gccera.myai.engine.code.SecretStore,
+    private val projects: com.gccera.myai.data.code.ProjectRepository,
+    private val documents: com.gccera.myai.data.repo.DocumentRepository,
 ) : ViewModel() {
+    // Secrets are never shown again after saving; the UI only knows whether one is set.
+    private val _hasGitToken = MutableStateFlow(secrets.has(com.gccera.myai.engine.code.SecretStore.GITHUB_TOKEN))
+    val hasGitToken = _hasGitToken.asStateFlow()
+    private val _hasCloudKey = MutableStateFlow(secrets.has(com.gccera.myai.engine.code.SecretStore.CLOUD_API_KEY))
+    val hasCloudKey = _hasCloudKey.asStateFlow()
+
+    fun setGitToken(token: String?) {
+        secrets.put(com.gccera.myai.engine.code.SecretStore.GITHUB_TOKEN, token?.trim())
+        _hasGitToken.value = !token.isNullOrBlank()
+    }
+
+    fun setCloudKey(key: String?) {
+        secrets.put(com.gccera.myai.engine.code.SecretStore.CLOUD_API_KEY, key?.trim())
+        _hasCloudKey.value = !key.isNullOrBlank()
+    }
+
 
     val settings: StateFlow<AppSettings?> = settingsRepo.settings.stateIn(viewModelScope, SharingStarted.Eagerly, null)
     val reportCount = reports.count.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
@@ -71,6 +90,9 @@ class SettingsViewModel @Inject constructor(
         reports.clear()
         models.deleteAll()
         catalog.clearCustom()
+        documents.deleteAll()
+        projects.deleteAll()
+        secrets.clear()
         settingsRepo.clear()
         withContext(Dispatchers.IO) { File(context.cacheDir.path).listFiles()?.forEach { it.deleteRecursively() } }
         refreshUsage()

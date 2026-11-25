@@ -1,0 +1,53 @@
+{
+ "languages": [
+  {
+   "grammar": "textmate/grammars/kotlin.json",
+   "name": "kotlin",
+   "scopeName": "source.kotlin"
+  },
+  {
+   "grammar": "textmate/grammars/java.json",
+   "name": "java",
+   "scopeName": "source.java"
+  },
+  {
+   "grammar": "textmate/grammars/python.json",
+   "name": "python",
+   "scopeName": "source.python"
+  },
+  {
+   "grammar": "textmate/grammars/javascript.json",
+   "name": "javascript",
+   "scopeName": "source.js"
+  },
+  {
+   "grammar": "textmate/grammars/html.json",
+   "name": "html",
+   "scopeName": "text.html.basic",
+   "embeddedLanguages": {
+    "source.css": "css",
+    "source.js": "javascript"
+   }
+  },
+  {
+   "grammar": "textmate/grammars/css.json",
+   "name": "css",
+   "scopeName": "source.css"
+  },
+  {
+   "grammar": "textmate/grammars/json.json",
+   "name": "json",
+   "scopeName": "source.json"
+  },
+  {
+   "grammar": "textmate/grammars/markdown.json",
+   "name": "markdown",
+   "scopeName": "text.html.markdown"
+  },
+  {
+   "grammar": "textmate/grammars/regexp.json",
+   "name": "regexp",
+   "scopeName": "source.regexp.python"
+  }
+ ]
+}

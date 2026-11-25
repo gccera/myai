@@ -30,7 +30,7 @@ class PromptImprover @Inject constructor(
             engine.complete(
                 systemPrompt = SYSTEM,
                 prompt = "Idea: ${prompt.trim()}\nPrompt:",
-                params = GenerationParams(SYSTEM, temperature = 0.7f, topK = s.topK, topP = s.topP, maxTokens = 160),
+                params = GenerationParams(SYSTEM, temperature = 0.7f, topK = s.topK, topP = s.topP, maxTokens = 160, repetitionPenalty = 1.15f),
             )
         }
         val cleaned = cleanup(raw)

@@ -140,6 +140,50 @@ fun SettingsScreen(
             )
             ListItem(headlineContent = { Text("Storage used by models") }, supportingContent = { Text(formatBytes(modelBytes)) })
 
+            Section("Git (Code tab)")
+            val hasGitToken by vm.hasGitToken.collectAsStateWithLifecycle()
+            var gitName by remember(settings.gitAuthorName) { mutableStateOf(settings.gitAuthorName) }
+            var gitEmail by remember(settings.gitAuthorEmail) { mutableStateOf(settings.gitAuthorEmail) }
+            Column(Modifier.padding(horizontal = 16.dp)) {
+                OutlinedTextField(gitName, { gitName = it }, label = { Text("Author name") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(gitEmail, { gitEmail = it.trim() }, label = { Text("Author e-mail") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                if (gitName != settings.gitAuthorName || gitEmail != settings.gitAuthorEmail)
+                    TextButton(onClick = { vm.update { it.copy(gitAuthorName = gitName, gitAuthorEmail = gitEmail) } }) { Text("Save author") }
+                SecretField(
+                    label = "GitHub personal access token",
+                    isSet = hasGitToken,
+                    help = "Needed for private repos and push. Stored encrypted with the Android Keystore; sent only to your Git host.",
+                    onSave = vm::setGitToken,
+                )
+            }
+
+            Section("Cloud model (optional)")
+            val hasCloudKey by vm.hasCloudKey.collectAsStateWithLifecycle()
+            var confirmCloud by remember { mutableStateOf(false) }
+            SwitchRow("Allow a cloud model in the Code assistant (OFF by default)", settings.cloudEnabled) { on ->
+                if (on) confirmCloud = true else vm.update { it.copy(cloudEnabled = false) }
+            }
+            if (settings.cloudEnabled) Column(Modifier.padding(horizontal = 16.dp)) {
+                Text(
+                    "When you choose \"Use cloud model\" in the assistant, your code and question are sent to ${com.gccera.myai.engine.code.CloudClient.host(settings.cloudBaseUrl)}. Everything else stays on the device.",
+                    color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall,
+                )
+                var url by remember(settings.cloudBaseUrl) { mutableStateOf(settings.cloudBaseUrl) }
+                var model by remember(settings.cloudModel) { mutableStateOf(settings.cloudModel) }
+                OutlinedTextField(url, { url = it.trim() }, label = { Text("OpenAI-compatible base URL") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(model, { model = it.trim() }, label = { Text("Model name") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                if (url != settings.cloudBaseUrl || model != settings.cloudModel)
+                    TextButton(enabled = url.startsWith("https://"), onClick = { vm.update { it.copy(cloudBaseUrl = url, cloudModel = model) } }) { Text("Save endpoint") }
+                SecretField(label = "API key", isSet = hasCloudKey, help = "Stored encrypted with the Android Keystore.", onSave = vm::setCloudKey)
+            }
+            if (confirmCloud) AlertDialog(
+                onDismissRequest = { confirmCloud = false },
+                title = { Text("Use a cloud model?") },
+                text = { Text("This app is offline-first. If you enable this, code you send to the assistant with \"Use cloud model\" leaves your phone and is processed by the provider you configure, under their terms and pricing. You can turn it off at any time.") },
+                confirmButton = { TextButton(onClick = { vm.update { it.copy(cloudEnabled = true) }; confirmCloud = false }) { Text("Enable") } },
+                dismissButton = { TextButton(onClick = { confirmCloud = false }) { Text("Cancel") } },
+            )
+
             Section("Your data")
             ListItem(headlineContent = { Text("Delete all chats") }, modifier = Modifier.clickable { confirm = "chats" })
             ListItem(headlineContent = { Text("Delete all images") }, modifier = Modifier.clickable { confirm = "images" })
@@ -191,6 +235,27 @@ private fun Section(title: String) {
 }
 
 @Composable
+private fun SecretField(label: String, isSet: Boolean, help: String, onSave: (String?) -> Unit) {
+    var value by remember { mutableStateOf("") }
+    OutlinedTextField(
+        value = value, onValueChange = { value = it.trim() },
+        label = { Text(if (isSet) "$label (saved)" else label) },
+        placeholder = { if (isSet) Text("•••••••• (enter a new one to replace)") },
+        supportingText = { Text(help) },
+        visualTransformation = PasswordVisualTransformation(),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+        singleLine = true,
+        trailingIcon = {
+            Row {
+                if (value.isNotEmpty()) TextButton(onClick = { onSave(value); value = "" }) { Text("Save") }
+                else if (isSet) TextButton(onClick = { onSave(null) }) { Text("Remove") }
+            }
+        },
+        modifier = Modifier.fillMaxWidth(),
+    )
+}
+
+@Composable
 private fun SwitchRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
     Row(Modifier.fillMaxWidth().clickable { onChange(!checked) }.padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
         Text(label, Modifier.weight(1f))
@@ -215,7 +280,10 @@ fun LicensesScreen(onBack: () -> Unit, vm: SettingsViewModel = hiltViewModel()) 
         "Gemma Terms of Use (Gemma 3)" to "licenses/gemma-terms.txt",
         "Llama 3.2 Community License" to "licenses/llama-3.2.txt",
         "CreativeML Open RAIL-M (Stable Diffusion 1.5)" to "licenses/creativeml-openrail-m.txt",
-        "Apache License 2.0 (Qwen, Gemma 4, libraries)" to "licenses/apache-2.0.txt",
+        "Apache License 2.0 (Qwen, Gemma 4, MiniLM, Swin2SR, MODNet, libraries)" to "licenses/apache-2.0.txt",
+        "MIT License (Whisper)" to "licenses/mit.txt",
+        "Code editor: Sora Editor (LGPL-2.1) & TextMate grammars (MIT)" to "licenses/code-editor.txt",
+        "GNU LGPL 2.1 (full text)" to "licenses/lgpl-2.1.txt",
         "Open-source software" to "licenses/open-source.txt",
     )
     var open by remember { mutableStateOf<Pair<String, String>?>(null) }

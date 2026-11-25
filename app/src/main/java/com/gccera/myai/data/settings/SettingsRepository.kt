@@ -42,6 +42,8 @@ data class AppSettings(
     val cloudEnabled: Boolean = false,
     val cloudBaseUrl: String = "https://api.openai.com/v1",
     val cloudModel: String = "gpt-4o-mini",
+    /** User agreed that Google ML Kit (OCR/translation) may send usage metrics to Google. */
+    val mlKitConsent: Boolean = false,
     /** Optional Hugging Face read token, only for licence-gated models. Stored on device only. */
     val hfToken: String = "",
 ) {
@@ -77,6 +79,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         val cloudEnabled = booleanPreferencesKey("cloud_enabled")
         val cloudUrl = stringPreferencesKey("cloud_url")
         val cloudModel = stringPreferencesKey("cloud_model")
+        val mlKitConsent = booleanPreferencesKey("mlkit_consent")
         val hfToken = stringPreferencesKey("hf_token")
     }
 
@@ -106,6 +109,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
             p[K.cloudEnabled] = n.cloudEnabled
             p[K.cloudUrl] = n.cloudBaseUrl
             p[K.cloudModel] = n.cloudModel
+            p[K.mlKitConsent] = n.mlKitConsent
             p[K.hfToken] = n.hfToken
         }
     }
@@ -133,6 +137,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
             cloudEnabled = p[K.cloudEnabled] ?: false,
             cloudBaseUrl = p[K.cloudUrl] ?: d.cloudBaseUrl,
             cloudModel = p[K.cloudModel] ?: d.cloudModel,
+            mlKitConsent = p[K.mlKitConsent] ?: false,
         )
     }
 

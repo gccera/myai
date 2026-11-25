@@ -26,14 +26,25 @@ import kotlin.coroutines.resumeWithException
  */
 @Singleton
 class MlKitRepository @Inject constructor(@ApplicationContext private val context: Context) {
+    @Volatile private var started = false
+
+    /**
+     * ML Kit's auto-start provider is removed from the manifest; we start it on first use, after the
+     * user consented (Google's ML Kit SDK sends API usage/performance metrics, never images or text).
+     */
+    @Synchronized fun ensureStarted() {
+        if (!started) { com.google.mlkit.common.MlKit.initialize(context); started = true }
+    }
 
     suspend fun recognizeText(uri: Uri): String {
+        ensureStarted()
         val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
         return try { recognizer.process(InputImage.fromFilePath(context, uri)).await().text } finally { recognizer.close() }
     }
 
     /** BCP-47 code of the detected language, or null if undetermined. */
     suspend fun detectLanguage(text: String): String? {
+        ensureStarted()
         val client = LanguageIdentification.getClient()
         return try { client.identifyLanguage(text).await().takeIf { it != "und" } } finally { client.close() }
     }
@@ -44,9 +55,10 @@ class MlKitRepository @Inject constructor(@ApplicationContext private val contex
         .sortedBy { it.second }
 
     suspend fun downloadedLanguages(): Set<String> =
-        RemoteModelManager.getInstance().getDownloadedModels(TranslateRemoteModel::class.java).await().map { it.language }.toSet()
+        if (!started) emptySet() else RemoteModelManager.getInstance().getDownloadedModels(TranslateRemoteModel::class.java).await().map { it.language }.toSet()
 
     suspend fun deleteLanguage(code: String) {
+        ensureStarted()
         RemoteModelManager.getInstance().deleteDownloadedModel(TranslateRemoteModel.Builder(code).build()).await()
     }
 
@@ -55,6 +67,7 @@ class MlKitRepository @Inject constructor(@ApplicationContext private val contex
         val src = source ?: detectLanguage(text)?.let { TranslateLanguage.fromLanguageTag(it) }
             ?: throw IllegalArgumentException("Couldn't detect the language; pick it manually.")
         if (src == target) return text to src
+        ensureStarted()
         val translator = Translation.getClient(TranslatorOptions.Builder().setSourceLanguage(src).setTargetLanguage(target).build())
         return try {
             translator.downloadModelIfNeeded(DownloadConditions.Builder().build()).await()

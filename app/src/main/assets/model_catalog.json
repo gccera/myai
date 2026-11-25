@@ -224,7 +224,7 @@
       "id": "qwen2.5-coder-7b-instruct",
       "type": "CODE",
       "name": "Qwen2.5-Coder 7B Instruct",
-      "description": "Much stronger coding model for 12 GB+ phones (community LiteRT-LM conversion). Slower.",
+      "description": "Much stronger coding model for 12 GB+ phones (community LiteRT-LM conversion, tested). Slower: a few tokens per second.",
       "params": "7B · int4",
       "minRamGb": 12,
       "recommendedRamGb": 12,
@@ -242,7 +242,8 @@
           "sizeBytes": 3852009456,
           "sha256": "bbdac339ebea084d7533930a1f1456ff9b5505e7ed1d1f25c6cebc857c88c165"
         }
-      ]
+      ],
+      "chatTemplate": "chatml"
     },
     {
       "id": "whisper-base",
