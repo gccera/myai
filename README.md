@@ -14,6 +14,7 @@ model files the user picks. Chats, prompts and images never leave the device.
 |---|---|
 | 1 | Onboarding device check, model manager (resumable, SHA-256), chat, image generation, gallery, safety, settings |
 | 2 | Voice input (Whisper), read aloud (TTS), chat with documents (RAG), image understanding (Gemma 4 E2B), upscaling ×2/×4, background removal, OCR + translation (ML Kit) |
+| + | Hugging Face sign-in (OAuth/PKCE) or token, in-app Hugging Face model browser, rust brand theme |
 | 3 | **Code** tab: Sora editor, projects (app storage or phone folders), file tree, search, AI assistant with diff Accept/Reject, AI autocomplete, run Python (Chaquopy) and HTML/CSS/JS (WebView), Git (JGit), optional cloud model, battery saver |
 
 ## 1. Engine choices (checked November 2026)
@@ -185,6 +186,26 @@ per step on 4 desktop cores, so expect **1–4 minutes per image** on a recent f
    - **Microphone:** used only while the user records voice input; processed on device.
    - **LGPL (Sora Editor):** keep `licenses/code-editor.txt` in the app and be ready to provide the library
      source on request.
+
+## 6a. "Sign in with Hugging Face" setup (one-time, required for the sign-in button)
+
+The app uses Hugging Face OAuth (authorization code + PKCE, no client secret) through a Custom Tab.
+1. Go to <https://huggingface.co/settings/applications/new> (or your organisation's settings) and create an
+   OAuth app **without a client secret** (public app).
+2. Redirect URI: `com.gccera.myai://oauth/callback` (it must match exactly; change it in `HfAccount.kt`,
+   `AndroidManifest.xml` and `manifestPlaceholders` if you change the applicationId).
+3. Scopes: `openid profile gated-repos read-repos`.
+4. Put the client ID in `~/.gradle/gradle.properties` (or the project's `gradle.properties`):
+   `hfOauthClientId=<your client id>` and rebuild.
+
+Without a client ID the button is disabled and users can paste a Hugging Face access token instead. Either
+way the token is stored encrypted (Android Keystore) and only sent to huggingface.co. Signing in unlocks
+gated models (after the user accepts the licence on the model page) and "My models" in the browser.
+
+**Model browser:** Settings → Models → *Browse Hugging Face* lists Hub models in LiteRT-LM format
+(`filter=litert-lm`, about 700 today) with downloads, likes, licence (non-commercial ones are flagged) and
+gated status. Picking a `.litertlm` file adds it as a Chat or Code model, pinned to the exact commit and
+verified against Hugging Face's SHA-256.
 
 ## 7. Customising
 

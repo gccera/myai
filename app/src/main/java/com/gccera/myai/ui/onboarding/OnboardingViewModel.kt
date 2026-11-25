@@ -24,6 +24,7 @@ class OnboardingViewModel @Inject constructor(
     private val catalog: ModelCatalogRepository,
     private val models: ModelRepository,
     private val settings: SettingsRepository,
+    private val hfAccount: com.gccera.myai.data.hf.HfAccount,
 ) : ViewModel() {
 
     data class UiState(
@@ -45,8 +46,8 @@ class OnboardingViewModel @Inject constructor(
 
     /** Queues downloads (they continue in the background) and marks them active. */
     fun download(spec: ModelSpec) = viewModelScope.launch {
-        if (spec.requiresHfToken && settings.current().hfToken.isBlank()) {
-            _state.value = _state.value.copy(message = "${spec.name} needs a Hugging Face token (Settings). You can download it later from Models.")
+        if (spec.requiresHfToken && hfAccount.state.value is com.gccera.myai.data.hf.HfAccountState.SignedOut) {
+            _state.value = _state.value.copy(message = "${spec.name} is gated: sign in with Hugging Face above, accept its licence on huggingface.co, then download.")
             return@launch
         }
         try {

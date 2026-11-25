@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Handyman
 import com.gccera.myai.ui.chat.ChatScreen
 import com.gccera.myai.ui.code.CodeScreen
+import com.gccera.myai.ui.hf.HfBrowserScreen
 import com.gccera.myai.ui.tools.ToolsScreen
 import com.gccera.myai.ui.gallery.GalleryDetailScreen
 import com.gccera.myai.ui.gallery.GalleryScreen
@@ -49,6 +50,7 @@ object Routes {
     const val CODE = "code"
     const val TOOLS = "tools"
     const val MODELS_TAB = "models?tab={tab}"
+    const val HUB = "hub"
     const val LICENSES = "licenses"
     const val PRIVACY = "privacy"
 }
@@ -108,11 +110,15 @@ fun AppNavHost(onboardingDone: Boolean) {
                 )
             }
             composable(Routes.MODELS_TAB, arguments = listOf(navArgument("tab") { type = NavType.IntType; defaultValue = 0 })) {
-                ModelsScreen(onBack = { nav.popBackStack() }, initialTab = it.arguments?.getInt("tab") ?: 0)
+                ModelsScreen(onBack = { nav.popBackStack() }, initialTab = it.arguments?.getInt("tab") ?: 0, onBrowseHub = { nav.navigate(Routes.HUB) })
+            }
+            composable(Routes.HUB) {
+                HfBrowserScreen(onBack = { nav.popBackStack() }, onOpenAccount = { nav.switchTab(Routes.SETTINGS) })
             }
             composable(Routes.SETTINGS) {
                 SettingsScreen(
                     onOpenModels = { nav.navigate("models?tab=0") },
+                    onOpenHub = { nav.navigate(Routes.HUB) },
                     onOpenLicenses = { nav.navigate(Routes.LICENSES) },
                     onOpenPrivacy = { nav.navigate(Routes.PRIVACY) },
                     onDataCleared = {

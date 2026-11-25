@@ -30,6 +30,12 @@ android {
         versionName = "1.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
+        // "Sign in with Hugging Face": OAuth client ID of YOUR app registered at
+        // https://huggingface.co/settings/applications/new (public app, no secret). Set it in
+        // gradle.properties or ~/.gradle/gradle.properties:  hfOauthClientId=xxxxxxxx
+        buildConfigField("String", "HF_OAUTH_CLIENT_ID", "\"${project.findProperty("hfOauthClientId") ?: ""}\"")
+        manifestPlaceholders["hfRedirectScheme"] = "com.gccera.myai"
+
         // LiteRT-LM ships native code for arm64-v8a (phones) and x86_64 (emulator) only.
         ndk { abiFilters += listOf("arm64-v8a", "x86_64") }
     }
@@ -136,6 +142,7 @@ dependencies {
     implementation(libs.diff.utils)
     implementation(libs.androidx.webkit)
     implementation(libs.androidx.documentfile)
+    implementation(libs.androidx.browser) // Custom Tabs for Hugging Face sign-in
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 
     testImplementation(libs.junit)

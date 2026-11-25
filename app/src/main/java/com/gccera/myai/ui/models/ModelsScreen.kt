@@ -70,7 +70,7 @@ import com.gccera.myai.util.formatBytes
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ModelsScreen(onBack: (() -> Unit)? = null, initialTab: Int = 0, vm: ModelsViewModel = hiltViewModel()) {
+fun ModelsScreen(onBack: (() -> Unit)? = null, initialTab: Int = 0, onBrowseHub: () -> Unit = {}, vm: ModelsViewModel = hiltViewModel()) {
     val entries by vm.entries.collectAsStateWithLifecycle()
     val settings by vm.settings.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
@@ -98,6 +98,7 @@ fun ModelsScreen(onBack: (() -> Unit)? = null, initialTab: Int = 0, vm: ModelsVi
             TopAppBar(
                 title = { Text("Models") },
                 navigationIcon = { onBack?.let { IconButton(onClick = it) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } } },
+                actions = { TextButton(onClick = onBrowseHub) { Text("Browse Hugging Face") } },
             )
         },
         snackbarHost = { SnackbarHost(snackbar) },

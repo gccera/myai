@@ -58,5 +58,9 @@ class SecretStore @Inject constructor(@ApplicationContext context: Context) {
         private const val ALIAS = "myai-secrets"
         const val GITHUB_TOKEN = "github_token"
         const val CLOUD_API_KEY = "cloud_api_key"
+        /** Hugging Face: pasted personal access token, or OAuth access/refresh tokens. */
+        const val HF_TOKEN = "hf_token"
+        const val HF_ACCESS = "hf_oauth_access"
+        const val HF_REFRESH = "hf_oauth_refresh"
     }
 }

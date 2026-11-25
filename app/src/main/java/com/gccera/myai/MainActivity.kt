@@ -2,7 +2,11 @@ package com.gccera.myai
 
 import android.Manifest
 import android.os.Build
+import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -24,6 +28,7 @@ import javax.inject.Inject
 class MainActivity : ComponentActivity() {
 
     @Inject lateinit var settingsRepository: SettingsRepository
+    @Inject lateinit var hfAccount: com.gccera.myai.data.hf.HfAccount
 
     private val notificationPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { /* progress is also shown in-app */ }
@@ -35,6 +40,8 @@ class MainActivity : ComponentActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && savedInstanceState == null) {
             notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
+        handleIntent(intent)
+        lifecycleScope.launch { hfAccount.migrateLegacyToken() }
         setContent {
             val settings by settingsRepository.settings.collectAsStateWithLifecycle(initialValue = null)
             val s = settings
@@ -48,6 +55,23 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleIntent(intent)
+    }
+
+    /** Completes "Sign in with Hugging Face" when the browser redirects back to com.gccera.myai://oauth/callback. */
+    private fun handleIntent(intent: Intent?) {
+        val uri = intent?.data ?: return
+        if (!hfAccount.isRedirect(uri)) return
+        setIntent(Intent(this, MainActivity::class.java)) // don't re-handle on rotation
+        lifecycleScope.launch {
+            val msg = runCatching { hfAccount.handleRedirect(uri) }
+                .fold({ "Signed in to Hugging Face" }, { it.message ?: "Sign-in failed" })
+            Toast.makeText(this@MainActivity, msg, Toast.LENGTH_LONG).show()
         }
     }
 }

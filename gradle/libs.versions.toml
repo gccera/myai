@@ -33,6 +33,7 @@ webkit = "1.18.0"
 documentfile = "1.1.0"
 chaquopy = "17.2.0"
 desugar = "2.1.5"
+browser = "1.10.0"
 # Tests
 junit = "4.13.2"
 androidxJunit = "1.3.0"
@@ -83,6 +84,7 @@ jgit = { module = "org.eclipse.jgit:org.eclipse.jgit", version.ref = "jgit" }
 diff-utils = { module = "io.github.java-diff-utils:java-diff-utils", version.ref = "diffUtils" }
 androidx-webkit = { module = "androidx.webkit:webkit", version.ref = "webkit" }
 androidx-documentfile = { module = "androidx.documentfile:documentfile", version.ref = "documentfile" }
+androidx-browser = { module = "androidx.browser:browser", version.ref = "browser" }
 desugar-jdk-libs = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugar" }
 
 [plugins]

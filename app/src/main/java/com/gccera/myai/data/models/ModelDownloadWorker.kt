@@ -29,6 +29,7 @@ class ModelDownloadWorker @AssistedInject constructor(
     private val catalog: ModelCatalogRepository,
     private val storage: ModelStorage,
     private val settings: SettingsRepository,
+    private val hfAccount: com.gccera.myai.data.hf.HfAccount,
     okHttp: OkHttpClient,
 ) : CoroutineWorker(appContext, params) {
 
@@ -39,7 +40,8 @@ class ModelDownloadWorker @AssistedInject constructor(
         val modelId = inputData.getString(KEY_MODEL_ID) ?: return Result.failure()
         val spec = catalog.find(modelId)
             ?: return Result.failure(workDataOf(KEY_ERROR to "Unknown model $modelId"))
-        val token = settings.current().hfToken.takeIf { it.isNotBlank() }
+        // Signed-in Hugging Face account (OAuth or pasted token); sent only to huggingface.co.
+        val token = if (spec.files.all { it.url.startsWith("https://huggingface.co/") }) hfAccount.token() else null
         val total = spec.totalBytes
 
         runCatching { setForeground(foregroundInfo(spec.name, 0, total, verifying = false)) }

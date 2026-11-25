@@ -65,6 +65,7 @@ import com.mikepenz.markdown.m3.Markdown
 @Composable
 fun SettingsScreen(
     onOpenModels: () -> Unit,
+    onOpenHub: () -> Unit,
     onOpenLicenses: () -> Unit,
     onOpenPrivacy: () -> Unit,
     onDataCleared: () -> Unit,
@@ -98,7 +99,7 @@ fun SettingsScreen(
                     Text(when (mode) { ThemeMode.SYSTEM -> "System default"; ThemeMode.LIGHT -> "Light"; ThemeMode.DARK -> "Dark" }, Modifier.padding(start = 12.dp))
                 }
             }
-            SwitchRow("Dynamic colours (Android 12+)", settings.dynamicColor) { v -> vm.update { it.copy(dynamicColor = v) } }
+            SwitchRow("Use wallpaper colours instead of rust (Android 12+)", settings.dynamicColor) { v -> vm.update { it.copy(dynamicColor = v) } }
 
             Section("Chat defaults (for new chats)")
             ListItem(
@@ -126,18 +127,8 @@ fun SettingsScreen(
                 }
             }
 
-            Section("Model downloads")
-            var token by remember(settings.hfToken) { mutableStateOf(settings.hfToken) }
-            OutlinedTextField(
-                value = token, onValueChange = { token = it.trim() },
-                label = { Text("Hugging Face read token (optional)") },
-                supportingText = { Text("Only for licence-gated models (Gemma 3, Llama). Stored on this device and sent only to huggingface.co.") },
-                visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                singleLine = true,
-                trailingIcon = { if (token != settings.hfToken) TextButton(onClick = { vm.update { it.copy(hfToken = token) } }) { Text("Save") } },
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-            )
+            Section("Hugging Face account")
+            com.gccera.myai.ui.hf.HfAccountCard(Modifier.padding(horizontal = 16.dp), onBrowse = onOpenHub)
             ListItem(headlineContent = { Text("Storage used by models") }, supportingContent = { Text(formatBytes(modelBytes)) })
 
             Section("Git (Code tab)")

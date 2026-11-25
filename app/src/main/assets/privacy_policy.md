@@ -23,6 +23,14 @@ The App downloads AI model files you choose from Hugging Face (huggingface.co an
 receives standard technical information (IP address, requested file). An optional Hugging Face token,
 needed only for licence-gated models, is stored on your device and sent only to Hugging Face.
 
+## 2a. Hugging Face account and model browser (optional)
+
+You can sign in with your Hugging Face account (or paste an access token) to download gated models and see
+your own models. Sign-in happens on huggingface.co in your browser; the App receives only an access token
+(scopes: profile, gated and personal repository read access), stores it encrypted with the Android Keystore,
+and sends it only to huggingface.co. Browsing models sends your search text to huggingface.co. Signing out
+deletes the token from the device.
+
 ## 3. Google ML Kit (text from photos, translation) — off until you enable it
 
 Text recognition and translation use Google ML Kit. The photos and text you process are handled **on your

@@ -22,7 +22,8 @@ enum class LlmBackend { CPU, GPU }
 data class AppSettings(
     val onboardingDone: Boolean = false,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
-    val dynamicColor: Boolean = true,
+    /** Wallpaper colours (Android 12+) instead of the rust brand theme. Off by default. */
+    val dynamicColor: Boolean = false,
     val defaultSystemPrompt: String = DEFAULT_SYSTEM_PROMPT,
     val temperature: Float = 0.7f,
     val topK: Int = 40,
@@ -62,7 +63,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
     private object K {
         val onboarding = booleanPreferencesKey("onboarding_done")
         val theme = stringPreferencesKey("theme")
-        val dynamic = booleanPreferencesKey("dynamic_color")
+        val dynamic = booleanPreferencesKey("dynamic_color_v2")
         val sysPrompt = stringPreferencesKey("system_prompt")
         val temp = floatPreferencesKey("temperature")
         val topK = intPreferencesKey("top_k")

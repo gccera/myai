@@ -33,6 +33,7 @@ class ModelsViewModel @Inject constructor(
     private val repo: ModelRepository,
     private val catalog: ModelCatalogRepository,
     private val settingsRepo: SettingsRepository,
+    private val hfAccount: com.gccera.myai.data.hf.HfAccount,
     sessions: ModelSessionManager,
     deviceInspector: DeviceInspector,
 ) : ViewModel() {
@@ -47,8 +48,8 @@ class ModelsViewModel @Inject constructor(
     val messages = _messages.receiveAsFlow()
 
     fun download(spec: ModelSpec) = viewModelScope.launch {
-        if (spec.requiresHfToken && settingsRepo.current().hfToken.isBlank()) {
-            _messages.send("${spec.name} is licence-gated on Hugging Face: accept its licence on huggingface.co, then add a read token in Settings.")
+        if (spec.requiresHfToken && hfAccount.state.value is com.gccera.myai.data.hf.HfAccountState.SignedOut) {
+            _messages.send("${spec.name} is licence-gated: sign in with Hugging Face (Settings) and accept its licence on huggingface.co.")
             return@launch
         }
         try {

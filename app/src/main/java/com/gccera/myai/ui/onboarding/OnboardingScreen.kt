@@ -70,6 +70,13 @@ fun OnboardingScreen(onDone: () -> Unit, vm: OnboardingViewModel = hiltViewModel
         }
 
         Card {
+            Column(Modifier.padding(16.dp)) {
+                Text("Hugging Face account (optional)", style = MaterialTheme.typography.titleMedium)
+                com.gccera.myai.ui.hf.HfAccountCard(Modifier.padding(top = 8.dp))
+            }
+        }
+
+        Card {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Recommended for this phone", style = MaterialTheme.typography.titleMedium)
                 s.recommendation.notes.forEach { Text("• $it", style = MaterialTheme.typography.bodySmall) }
