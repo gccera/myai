@@ -116,6 +116,7 @@ class ModelRepository @Inject constructor(
             it.copy(
                 activeChatModelId = it.activeChatModelId.takeUnless { id -> id == spec.id },
                 activeImageModelId = it.activeImageModelId.takeUnless { id -> id == spec.id },
+                activeCodeModelId = it.activeCodeModelId.takeUnless { id -> id == spec.id },
             )
         }
         diskVersion.value++
@@ -134,14 +135,33 @@ class ModelRepository @Inject constructor(
     /** Active model of a type: the user's choice if installed, else the first installed one. */
     suspend fun activeModel(type: ModelType): ModelSpec? {
         val s = settings.current()
-        val chosen = catalog.find(if (type == ModelType.CHAT) s.activeChatModelId else s.activeImageModelId)
+        val chosen = catalog.find(when (type) {
+            ModelType.CHAT -> s.activeChatModelId
+            ModelType.CODE -> s.activeCodeModelId
+            ModelType.IMAGE -> s.activeImageModelId
+            ModelType.TOOL -> null
+        })
         if (chosen != null && chosen.type == type && storage.isInstalled(chosen)) return chosen
         return catalog.models.value.firstOrNull { it.type == type && storage.isInstalled(it) }
     }
 
     suspend fun setActive(spec: ModelSpec) = settings.update {
-        if (spec.type == ModelType.CHAT) it.copy(activeChatModelId = spec.id) else it.copy(activeImageModelId = spec.id)
+        when (spec.type) {
+            ModelType.CHAT -> it.copy(activeChatModelId = spec.id)
+            ModelType.CODE -> it.copy(activeCodeModelId = spec.id)
+            ModelType.IMAGE -> it.copy(activeImageModelId = spec.id)
+            ModelType.TOOL -> it
+        }
     }
+
+    /** Installed helper model of a [com.gccera.myai.data.catalog.ToolKind], if any. */
+    fun toolModel(kind: String): ModelSpec? =
+        catalog.models.value.firstOrNull { it.type == ModelType.TOOL && it.tool == kind && storage.isInstalled(it) }
+
+    /** Catalog entry for a tool kind (installed or not), to offer a download. */
+    fun toolSpec(kind: String): ModelSpec? = catalog.models.value.firstOrNull { it.type == ModelType.TOOL && it.tool == kind }
+
+    fun dirOf(spec: ModelSpec) = storage.dirFor(spec)
 
     fun refresh() { diskVersion.value++ }
 }

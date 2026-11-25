@@ -12,6 +12,10 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Memory
+import androidx.compose.foundation.layout.Box
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -60,6 +64,7 @@ import com.mikepenz.markdown.m3.Markdown
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
+    onOpenModels: () -> Unit,
     onOpenLicenses: () -> Unit,
     onOpenPrivacy: () -> Unit,
     onDataCleared: () -> Unit,
@@ -76,6 +81,12 @@ fun SettingsScreen(
 
     Scaffold(topBar = { TopAppBar(title = { Text("Settings") }) }, snackbarHost = { SnackbarHost(snackbar) }) { pad ->
         Column(Modifier.padding(pad).fillMaxSize().verticalScroll(rememberScrollState())) {
+            ListItem(
+                headlineContent = { Text("Models") },
+                supportingContent = { Text("Download, choose and delete chat, code, image and tool models") },
+                leadingContent = { Icon(Icons.Default.Memory, null) },
+                modifier = Modifier.clickable(onClick = onOpenModels),
+            )
             Section("Appearance")
             ThemeMode.entries.forEach { mode ->
                 Row(
@@ -100,6 +111,19 @@ fun SettingsScreen(
             SliderRow("Top-K", settings.topK.toFloat(), 1f..100f, settings.topK.toString()) { v -> vm.update { it.copy(topK = v.toInt()) } }
             SwitchRow("Use GPU for chat (faster on many phones; falls back to CPU)", settings.backend == LlmBackend.GPU) { v ->
                 vm.update { it.copy(backend = if (v) LlmBackend.GPU else LlmBackend.CPU) }
+            }
+
+            Section("Voice input")
+            var langMenu by remember { mutableStateOf(false) }
+            Box(Modifier.padding(horizontal = 16.dp)) {
+                TextButton(onClick = { langMenu = true }) {
+                    Text("Speech language: " + (SPEECH_LANGS.firstOrNull { it.first == settings.speechLanguage }?.second ?: settings.speechLanguage))
+                }
+                DropdownMenu(expanded = langMenu, onDismissRequest = { langMenu = false }) {
+                    SPEECH_LANGS.forEach { (code, name) ->
+                        DropdownMenuItem(text = { Text(name) }, onClick = { vm.update { it.copy(speechLanguage = code) }; langMenu = false })
+                    }
+                }
             }
 
             Section("Model downloads")
@@ -152,6 +176,13 @@ fun SettingsScreen(
         }
     }
 }
+
+/** Common Whisper languages; Whisper supports ~99 ("auto" detects them all). */
+private val SPEECH_LANGS = listOf(
+    "auto" to "Detect automatically", "en" to "English", "es" to "Spanish", "fr" to "French", "de" to "German",
+    "it" to "Italian", "pt" to "Portuguese", "nl" to "Dutch", "hi" to "Hindi", "ar" to "Arabic", "zh" to "Chinese",
+    "ja" to "Japanese", "ko" to "Korean", "ru" to "Russian", "tr" to "Turkish", "id" to "Indonesian", "vi" to "Vietnamese",
+)
 
 @Composable
 private fun Section(title: String) {

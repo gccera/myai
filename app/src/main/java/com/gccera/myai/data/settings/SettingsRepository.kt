@@ -31,6 +31,17 @@ data class AppSettings(
     val backend: LlmBackend = LlmBackend.CPU,
     val activeChatModelId: String? = null,
     val activeImageModelId: String? = null,
+    val activeCodeModelId: String? = null,
+    /** Whisper language: "auto" or an ISO code such as "en". */
+    val speechLanguage: String = "auto",
+    /** Code tab: inline AI autocomplete (paused automatically by the battery saver). */
+    val autocomplete: Boolean = true,
+    val gitAuthorName: String = "",
+    val gitAuthorEmail: String = "",
+    /** Optional "bring your own key" cloud model for the Code tab. OFF by default. The key itself is in SecretStore. */
+    val cloudEnabled: Boolean = false,
+    val cloudBaseUrl: String = "https://api.openai.com/v1",
+    val cloudModel: String = "gpt-4o-mini",
     /** Optional Hugging Face read token, only for licence-gated models. Stored on device only. */
     val hfToken: String = "",
 ) {
@@ -58,6 +69,14 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         val backend = stringPreferencesKey("backend")
         val chatModel = stringPreferencesKey("active_chat_model")
         val imageModel = stringPreferencesKey("active_image_model")
+        val codeModel = stringPreferencesKey("active_code_model")
+        val speechLang = stringPreferencesKey("speech_language")
+        val autocomplete = booleanPreferencesKey("autocomplete")
+        val gitName = stringPreferencesKey("git_name")
+        val gitEmail = stringPreferencesKey("git_email")
+        val cloudEnabled = booleanPreferencesKey("cloud_enabled")
+        val cloudUrl = stringPreferencesKey("cloud_url")
+        val cloudModel = stringPreferencesKey("cloud_model")
         val hfToken = stringPreferencesKey("hf_token")
     }
 
@@ -79,6 +98,14 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
             p[K.backend] = n.backend.name
             if (n.activeChatModelId != null) p[K.chatModel] = n.activeChatModelId else p.remove(K.chatModel)
             if (n.activeImageModelId != null) p[K.imageModel] = n.activeImageModelId else p.remove(K.imageModel)
+            if (n.activeCodeModelId != null) p[K.codeModel] = n.activeCodeModelId else p.remove(K.codeModel)
+            p[K.speechLang] = n.speechLanguage
+            p[K.autocomplete] = n.autocomplete
+            p[K.gitName] = n.gitAuthorName
+            p[K.gitEmail] = n.gitAuthorEmail
+            p[K.cloudEnabled] = n.cloudEnabled
+            p[K.cloudUrl] = n.cloudBaseUrl
+            p[K.cloudModel] = n.cloudModel
             p[K.hfToken] = n.hfToken
         }
     }
@@ -98,6 +125,14 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
             activeChatModelId = p[K.chatModel],
             activeImageModelId = p[K.imageModel],
             hfToken = p[K.hfToken] ?: "",
+            activeCodeModelId = p[K.codeModel],
+            speechLanguage = p[K.speechLang] ?: d.speechLanguage,
+            autocomplete = p[K.autocomplete] ?: d.autocomplete,
+            gitAuthorName = p[K.gitName] ?: "",
+            gitAuthorEmail = p[K.gitEmail] ?: "",
+            cloudEnabled = p[K.cloudEnabled] ?: false,
+            cloudBaseUrl = p[K.cloudUrl] ?: d.cloudBaseUrl,
+            cloudModel = p[K.cloudModel] ?: d.cloudModel,
         )
     }
 

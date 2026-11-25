@@ -19,7 +19,13 @@ import javax.inject.Inject
 class GalleryViewModel @Inject constructor(
     private val images: ImageRepository,
     private val reports: ReportRepository,
+    private val tools: com.gccera.myai.engine.ImageToolsController,
 ) : ViewModel() {
+    val toolState = tools.state
+    fun runTool(id: Long, tool: com.gccera.myai.engine.ImageTool) { tools.reset(); tools.runOnGalleryImage(id, tool) }
+    fun cancelTool() = tools.cancel()
+    fun resetTool() = tools.reset()
+
     val all: StateFlow<List<ImageEntity>> =
         images.images.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 

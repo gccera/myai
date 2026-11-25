@@ -106,7 +106,7 @@
       "id": "gemma4-e2b-it",
       "type": "CHAT",
       "name": "Gemma 4 E2B Instruct",
-      "description": "Newest Gemma, efficient 2B-effective model. Best quality for 8 GB+ phones.",
+      "description": "Newest Gemma, efficient 2B-effective model. Can also describe photos you attach. Best quality for 8 GB+ phones.",
       "params": "E2B · mixed int4",
       "minRamGb": 8,
       "recommendedRamGb": 12,
@@ -124,7 +124,8 @@
           "sizeBytes": 2588147712,
           "sha256": "181938105e0eefd105961417e8da75903eacda102c4fce9ce90f50b97139a63c"
         }
-      ]
+      ],
+      "vision": true
     },
     {
       "id": "sd15-onnx-fp16",
@@ -192,6 +193,198 @@
           "url": "https://huggingface.co/nmkd/stable-diffusion-1.5-onnx-fp16/resolve/38dacf2c14c89e3538b5e32da888eb9c46e0e1bf/tokenizer/special_tokens_map.json",
           "sizeBytes": 472,
           "sha256": "c4864a9376a8401918425bed71fc14fc0e81f9b59ec45c1cf96cccb2df508eac"
+        }
+      ]
+    },
+    {
+      "id": "qwen2.5-coder-1.5b-instruct",
+      "type": "CODE",
+      "name": "Qwen2.5-Coder 1.5B Instruct",
+      "description": "Code assistant: explain, fix, refactor, tests and autocomplete. Fast on most phones.",
+      "params": "1.5B · int4",
+      "minRamGb": 4,
+      "recommendedRamGb": 6,
+      "contextTokens": 4096,
+      "license": {
+        "id": "apache-2.0",
+        "name": "Apache License 2.0",
+        "commercialUse": true,
+        "url": "https://huggingface.co/Qwen/Qwen2.5-Coder-1.5B-Instruct/blob/main/LICENSE"
+      },
+      "files": [
+        {
+          "path": "Qwen2.5-Coder-1.5B-Instruct_int4.litertlm",
+          "url": "https://huggingface.co/litert-community/Qwen2.5-Coder-1.5B-Instruct/resolve/2557628071a7ce0c859894eef304a02f683e0f0c/Qwen2.5-Coder-1.5B-Instruct_int4.litertlm",
+          "sizeBytes": 1118076928,
+          "sha256": "289e5071b2b92218f97d2503cd35160c30e06693c39c7afb7447711c42dd0e30"
+        }
+      ]
+    },
+    {
+      "id": "qwen2.5-coder-7b-instruct",
+      "type": "CODE",
+      "name": "Qwen2.5-Coder 7B Instruct",
+      "description": "Much stronger coding model for 12 GB+ phones (community LiteRT-LM conversion). Slower.",
+      "params": "7B · int4",
+      "minRamGb": 12,
+      "recommendedRamGb": 12,
+      "contextTokens": 4096,
+      "license": {
+        "id": "apache-2.0",
+        "name": "Apache License 2.0",
+        "commercialUse": true,
+        "url": "https://huggingface.co/Qwen/Qwen2.5-Coder-7B-Instruct/blob/main/LICENSE"
+      },
+      "files": [
+        {
+          "path": "qwen2.5-coder-7b-it-dynamic_wi4_afp32.litertlm",
+          "url": "https://huggingface.co/Uranos8685/qwen2.5-coder-7b-it-dynamic_wi4_afp32/resolve/317d402916a61b358f0e52f4eed83d5010c1d9e7/qwen2.5-coder-7b-it-dynamic_wi4_afp32.litertlm",
+          "sizeBytes": 3852009456,
+          "sha256": "bbdac339ebea084d7533930a1f1456ff9b5505e7ed1d1f25c6cebc857c88c165"
+        }
+      ]
+    },
+    {
+      "id": "whisper-base",
+      "type": "TOOL",
+      "tool": "speech",
+      "name": "Whisper Base (voice input)",
+      "description": "Speech-to-text in ~99 languages for the microphone button.",
+      "params": "74M · int8",
+      "minRamGb": 3,
+      "recommendedRamGb": 4,
+      "license": {
+        "id": "mit",
+        "name": "MIT License",
+        "url": "https://github.com/openai/whisper/blob/main/LICENSE",
+        "commercialUse": true
+      },
+      "files": [
+        {
+          "path": "onnx/encoder_model_quantized.onnx",
+          "url": "https://huggingface.co/onnx-community/whisper-base/resolve/27a07b4b52b3a4c5886134bb4320e93e1a4bbc7c/onnx/encoder_model_quantized.onnx",
+          "sizeBytes": 23201314,
+          "sha256": "5862993336bf33acd23736071aae2b32261d3b1b2f37780194460d4ef974dd46"
+        },
+        {
+          "path": "onnx/decoder_model_quantized.onnx",
+          "url": "https://huggingface.co/onnx-community/whisper-base/resolve/27a07b4b52b3a4c5886134bb4320e93e1a4bbc7c/onnx/decoder_model_quantized.onnx",
+          "sizeBytes": 53310178,
+          "sha256": "c859636f4463dd5a9ea752546c6c7badeb48ab3e22b340cafef08a15552fcb2e"
+        },
+        {
+          "path": "vocab.json",
+          "url": "https://huggingface.co/onnx-community/whisper-base/resolve/27a07b4b52b3a4c5886134bb4320e93e1a4bbc7c/vocab.json",
+          "sizeBytes": 1036584,
+          "sha256": "50d6a919f0a0601d56a04eb583c780d18553aa388254ba3158eb6a00f13e2c1a"
+        },
+        {
+          "path": "added_tokens.json",
+          "url": "https://huggingface.co/onnx-community/whisper-base/resolve/27a07b4b52b3a4c5886134bb4320e93e1a4bbc7c/added_tokens.json",
+          "sizeBytes": 34604,
+          "sha256": "9715fd2243b6f06a5858b5e32950d2853f73dd5bc201aafcf76f5082a2d8acd1"
+        }
+      ]
+    },
+    {
+      "id": "minilm-l6-v2",
+      "type": "TOOL",
+      "tool": "embedding",
+      "name": "MiniLM-L6 (document search)",
+      "description": "Small embedding model used to search your imported PDFs and text files.",
+      "params": "22M · int8",
+      "minRamGb": 2,
+      "recommendedRamGb": 3,
+      "license": {
+        "id": "apache-2.0",
+        "name": "Apache License 2.0",
+        "commercialUse": true,
+        "url": "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2"
+      },
+      "files": [
+        {
+          "path": "onnx/model_qint8_arm64.onnx",
+          "url": "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/1110a243fdf4706b3f48f1d95db1a4f5529b4d41/onnx/model_qint8_arm64.onnx",
+          "sizeBytes": 23026053,
+          "sha256": "4278337fd0ff3c68bfb6291042cad8ab363e1d9fbc43dcb499fe91c871902474"
+        },
+        {
+          "path": "vocab.txt",
+          "url": "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/1110a243fdf4706b3f48f1d95db1a4f5529b4d41/vocab.txt",
+          "sizeBytes": 231508,
+          "sha256": "07eced375cec144d27c900241f3e339478dec958f92fddbc551f295c992038a3"
+        }
+      ]
+    },
+    {
+      "id": "swin2sr-x2",
+      "type": "TOOL",
+      "tool": "upscale2x",
+      "name": "Swin2SR ×2 (upscale)",
+      "description": "Doubles image resolution with AI detail.",
+      "params": "1M · fp32",
+      "minRamGb": 3,
+      "recommendedRamGb": 4,
+      "license": {
+        "id": "apache-2.0",
+        "name": "Apache License 2.0",
+        "commercialUse": true,
+        "url": "https://huggingface.co/Xenova/swin2SR-classical-sr-x2-64"
+      },
+      "files": [
+        {
+          "path": "onnx/model.onnx",
+          "url": "https://huggingface.co/Xenova/swin2SR-classical-sr-x2-64/resolve/71e28a83cfb61f5dc95bafdeebf2815167914f2b/onnx/model.onnx",
+          "sizeBytes": 54428699,
+          "sha256": "6dde3fe2440543ccae7c40d175609f83c18aeaa3d8456745c4329ef97ae744bd"
+        }
+      ]
+    },
+    {
+      "id": "swin2sr-x4",
+      "type": "TOOL",
+      "tool": "upscale4x",
+      "name": "Swin2SR ×4 (upscale)",
+      "description": "Quadruples image resolution with AI detail.",
+      "params": "1M · fp32",
+      "minRamGb": 3,
+      "recommendedRamGb": 4,
+      "license": {
+        "id": "apache-2.0",
+        "name": "Apache License 2.0",
+        "commercialUse": true,
+        "url": "https://huggingface.co/caidas/swin2SR-classical-sr-x4-64"
+      },
+      "files": [
+        {
+          "path": "onnx/model.onnx",
+          "url": "https://huggingface.co/Xenova/swin2SR-classical-sr-x4-64/resolve/c60eac19ef391153929330791f241a7c861b3214/onnx/model.onnx",
+          "sizeBytes": 55020184,
+          "sha256": "95c8b7c898a6d08c788e5d9e7c7e78cfb2956f2cbbabe78264002f9704554992"
+        }
+      ]
+    },
+    {
+      "id": "modnet",
+      "type": "TOOL",
+      "tool": "background",
+      "name": "MODNet (background removal)",
+      "description": "Cuts out people and clear foreground subjects.",
+      "params": "6.5M · fp32",
+      "minRamGb": 3,
+      "recommendedRamGb": 4,
+      "license": {
+        "id": "apache-2.0",
+        "name": "Apache License 2.0",
+        "commercialUse": true,
+        "url": "https://github.com/ZHKKKe/MODNet/blob/master/LICENSE"
+      },
+      "files": [
+        {
+          "path": "onnx/model.onnx",
+          "url": "https://huggingface.co/Xenova/modnet/resolve/fa2fa546052fba4c08921230a26cc69a333fca12/onnx/model.onnx",
+          "sizeBytes": 25888640,
+          "sha256": "07c308cf0fc7e6e8b2065a12ed7fc07e1de8febb7dc7839d7b7f15dd66584df9"
         }
       ]
     }

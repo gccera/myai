@@ -86,3 +86,27 @@ interface ReportDao {
     @Query("DELETE FROM reports")
     suspend fun deleteAll()
 }
+
+@Dao
+interface DocumentDao {
+    @Query("SELECT * FROM documents ORDER BY createdAt DESC")
+    fun observeAll(): Flow<List<DocumentEntity>>
+
+    @Query("SELECT * FROM documents WHERE id = :id")
+    suspend fun get(id: Long): DocumentEntity?
+
+    @Insert suspend fun insert(d: DocumentEntity): Long
+    @Insert suspend fun insertChunks(chunks: List<ChunkEntity>)
+
+    @Query("SELECT * FROM chunks WHERE documentId = :documentId")
+    suspend fun chunks(documentId: Long): List<ChunkEntity>
+
+    @Query("DELETE FROM documents WHERE id = :id")
+    suspend fun delete(id: Long)
+
+    @Query("UPDATE conversations SET documentId = NULL WHERE documentId = :id")
+    suspend fun detachFromConversations(id: Long)
+
+    @Query("DELETE FROM documents")
+    suspend fun deleteAll()
+}

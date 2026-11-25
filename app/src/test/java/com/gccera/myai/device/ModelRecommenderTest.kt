@@ -39,6 +39,12 @@ class ModelRecommenderTest {
     @Test fun flagshipGetsLargestRecommendedChatModel() {
         val r = ModelRecommender.recommend(models, device(11.5))
         assertEquals("gemma4-e2b-it", r.chat?.id) // largest download that is RECOMMENDED at 12 GB
+        assertEquals("qwen2.5-coder-7b-instruct", r.code?.id) // 7B coder only from 12 GB
+    }
+
+    @Test fun coderModelByRam() {
+        assertEquals("qwen2.5-coder-1.5b-instruct", ModelRecommender.recommend(models, device(7.4)).code?.id)
+        assertNull(ModelRecommender.recommend(models, device(2.8)).code)
     }
 
     @Test fun warnsOn32BitCpu() {

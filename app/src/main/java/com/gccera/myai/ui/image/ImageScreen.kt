@@ -24,6 +24,8 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material3.IconButton
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -73,7 +75,7 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ImageScreen(onOpenModels: () -> Unit, vm: ImageViewModel = hiltViewModel()) {
+fun ImageScreen(onOpenModels: () -> Unit, onOpenGallery: () -> Unit = {}, vm: ImageViewModel = hiltViewModel()) {
     val form by vm.form.collectAsStateWithLifecycle()
     val state by vm.genState.collectAsStateWithLifecycle()
     val improving by vm.improving.collectAsStateWithLifecycle()
@@ -92,7 +94,11 @@ fun ImageScreen(onOpenModels: () -> Unit, vm: ImageViewModel = hiltViewModel()) 
     val busy = state is ImageGenState.Loading || state is ImageGenState.Running
     val cfg = vm.config()
 
-    Scaffold(topBar = { TopAppBar(title = { Text("Create image") }) }, snackbarHost = { SnackbarHost(snackbar) }) { pad ->
+    Scaffold(topBar = {
+        TopAppBar(title = { Text("Create image") }, actions = {
+            IconButton(onClick = onOpenGallery) { Icon(Icons.Default.PhotoLibrary, "Gallery") }
+        })
+    }, snackbarHost = { SnackbarHost(snackbar) }) { pad ->
         if (model == null) {
             EmptyState(Icons.Default.Image, "No image model yet", "Download an image model to generate pictures on-device.") {
                 Button(onClick = onOpenModels) { Text("Open Models") }

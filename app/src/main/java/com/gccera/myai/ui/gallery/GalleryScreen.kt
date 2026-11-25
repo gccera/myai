@@ -24,7 +24,11 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.TextButton
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.PhotoLibrary
@@ -67,9 +71,11 @@ import java.util.Date
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GalleryScreen(onOpen: (Long) -> Unit, vm: GalleryViewModel = hiltViewModel()) {
+fun GalleryScreen(onOpen: (Long) -> Unit, onBack: () -> Unit, vm: GalleryViewModel = hiltViewModel()) {
     val images by vm.all.collectAsStateWithLifecycle()
-    Scaffold(topBar = { TopAppBar(title = { Text("Gallery") }) }) { pad ->
+    Scaffold(topBar = {
+        TopAppBar(title = { Text("Gallery") }, navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } })
+    }) { pad ->
         if (images.isEmpty()) {
             Box(Modifier.padding(pad)) {
                 EmptyState(Icons.Default.PhotoLibrary, "No images yet", "Images you create are kept privately on this device.")
@@ -99,7 +105,9 @@ fun GalleryScreen(onOpen: (Long) -> Unit, vm: GalleryViewModel = hiltViewModel()
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GalleryDetailScreen(id: Long, onBack: () -> Unit, vm: GalleryViewModel = hiltViewModel()) {
+fun GalleryDetailScreen(id: Long, onBack: () -> Unit, onOpen: (Long) -> Unit = {}, vm: GalleryViewModel = hiltViewModel()) {
+    val toolState by vm.toolState.collectAsStateWithLifecycle()
+    var toolsMenu by remember { mutableStateOf(false) }
     val img by remember(id) { vm.image(id) }.collectAsStateWithLifecycle(initialValue = null)
     val context = LocalContext.current
     val snackbar = remember { SnackbarHostState() }
@@ -127,6 +135,14 @@ fun GalleryDetailScreen(id: Long, onBack: () -> Unit, vm: GalleryViewModel = hil
                         }, enabled = !i.reported) { Icon(Icons.Default.Download, "Save to gallery") }
                         IconButton(onClick = { reporting = true }, enabled = !i.reported) { Icon(Icons.Default.Flag, "Report") }
                         IconButton(onClick = { confirmDelete = true }) { Icon(Icons.Default.Delete, "Delete") }
+                        Box {
+                            IconButton(onClick = { toolsMenu = true }, enabled = !i.reported) { Icon(Icons.Default.AutoFixHigh, "Image tools") }
+                            DropdownMenu(expanded = toolsMenu, onDismissRequest = { toolsMenu = false }) {
+                                com.gccera.myai.engine.ImageTool.entries.forEach { t ->
+                                    DropdownMenuItem(text = { Text(t.label) }, onClick = { toolsMenu = false; vm.runTool(i.id, t) })
+                                }
+                            }
+                        }
                     }
                 },
             )
@@ -144,6 +160,18 @@ fun GalleryDetailScreen(id: Long, onBack: () -> Unit, vm: GalleryViewModel = hil
                 bmp?.let {
                     Image(it.asImageBitmap(), i.prompt, Modifier.fillMaxWidth().aspectRatio(it.width.toFloat() / it.height).clip(RoundedCornerShape(12.dp)))
                 }
+            }
+            when (val ts = toolState) {
+                is com.gccera.myai.engine.ImageToolState.Running -> Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text("${ts.tool.label}… ${if (ts.total > 1) "${ts.done}/${ts.total}" else ""}", Modifier.weight(1f))
+                    TextButton(onClick = vm::cancelTool) { Text("Cancel") }
+                }
+                is com.gccera.myai.engine.ImageToolState.Done -> Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text("Done: saved as a new image.", Modifier.weight(1f))
+                    TextButton(onClick = { vm.resetTool(); onOpen(ts.imageId) }) { Text("Open") }
+                }
+                is com.gccera.myai.engine.ImageToolState.Error -> Text(ts.message, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 8.dp))
+                else -> Unit
             }
             SelectionContainer {
                 Column(Modifier.padding(top = 12.dp)) {

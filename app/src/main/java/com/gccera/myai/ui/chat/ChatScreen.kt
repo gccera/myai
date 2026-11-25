@@ -1,6 +1,28 @@
 package com.gccera.myai.ui.chat
 
+import android.Manifest
 import android.content.ActivityNotFoundException
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
+import androidx.compose.material.icons.filled.AddCircleOutline
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.StopCircle
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.RadioButton
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import com.gccera.myai.ui.common.rememberBitmap
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -109,6 +131,19 @@ fun ChatScreen(onOpenModels: () -> Unit, vm: ChatViewModel = hiltViewModel()) {
     var deleteConv by remember { mutableStateOf<ConversationEntity?>(null) }
     val listState = rememberLazyListState()
     val generating = streaming != null
+    val pendingImage by vm.pendingImage.collectAsStateWithLifecycle()
+    val attachedDoc by vm.attachedDocument.collectAsStateWithLifecycle()
+    val documents by vm.allDocuments.collectAsStateWithLifecycle()
+    val indexing by vm.indexing.collectAsStateWithLifecycle()
+    val voice by vm.voice.collectAsStateWithLifecycle()
+    val speakingId by vm.speaker.speaking.collectAsStateWithLifecycle()
+    var showDocs by remember { mutableStateOf(false) }
+    val pickImage = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri -> uri?.let(vm::attachImage) }
+    val pickDoc = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let(vm::importDocument) }
+    val micPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) vm.startVoice() else scope.launch { snackbar.showSnackbar("Microphone permission is needed for voice input.") }
+    }
+    LaunchedEffect(Unit) { vm.transcripts.collect { t -> input = (input.trimEnd() + " " + t).trim() } }
 
     LaunchedEffect(Unit) { vm.events.collect { snackbar.showSnackbar(it) } }
     // Keep the newest message in view while streaming.
@@ -153,6 +188,9 @@ fun ChatScreen(onOpenModels: () -> Unit, vm: ChatViewModel = hiltViewModel()) {
                         }
                     },
                     actions = {
+                        IconButton(onClick = { showDocs = true }) {
+                            Icon(Icons.Default.Description, "Chat with a document", tint = if (attachedDoc != null) MaterialTheme.colorScheme.primary else LocalContentColor.current)
+                        }
                         IconButton(onClick = { vm.newChat() }) { Icon(Icons.Default.Add, "New chat") }
                         IconButton(onClick = { showSettings = true }, enabled = conversation != null) { Icon(Icons.Default.Tune, "Chat settings") }
                     },
@@ -161,6 +199,16 @@ fun ChatScreen(onOpenModels: () -> Unit, vm: ChatViewModel = hiltViewModel()) {
             snackbarHost = { SnackbarHost(snackbar) },
         ) { pad ->
             Column(Modifier.padding(pad).fillMaxSize().imePadding()) {
+                attachedDoc?.let { d ->
+                    AssistChip(
+                        onClick = { showDocs = true },
+                        label = { Text("Answering from: ${d.name}", maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                        leadingIcon = { Icon(Icons.Default.Description, null, Modifier.size(18.dp)) },
+                        trailingIcon = { Icon(Icons.Default.Close, "Detach document", Modifier.size(18.dp).clickable { vm.attachDocument(null) }) },
+                        modifier = Modifier.padding(horizontal = 12.dp),
+                    )
+                }
+                indexing?.let { Text(it, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 16.dp)) }
                 Box(Modifier.weight(1f)) {
                     when {
                         activeModel == null -> EmptyState(
@@ -184,9 +232,18 @@ fun ChatScreen(onOpenModels: () -> Unit, vm: ChatViewModel = hiltViewModel()) {
                                     onRegenerate = { vm.regenerate(m.id) },
                                     onDelete = { vm.deleteMessage(m.id) },
                                     onReport = { reportTarget = m },
+                                    speaking = speakingId == m.id,
+                                    onSpeak = { vm.speak(m) },
                                 )
                             }
                         }
+                    }
+                }
+                pendingImage?.let { p ->
+                    Row(Modifier.padding(start = 12.dp, top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                        val bmp by rememberBitmap(p, 256)
+                        bmp?.let { Image(it.asImageBitmap(), "Attached photo", Modifier.size(56.dp).clip(RoundedCornerShape(8.dp)), contentScale = ContentScale.Crop) }
+                        TextButton(onClick = vm::clearImage) { Text("Remove photo") }
                     }
                 }
                 InputBar(
@@ -194,8 +251,20 @@ fun ChatScreen(onOpenModels: () -> Unit, vm: ChatViewModel = hiltViewModel()) {
                     onTextChange = { input = it },
                     enabled = activeModel != null,
                     generating = generating,
+                    hasAttachment = pendingImage != null,
+                    voice = voice,
+                    visionModel = activeModel?.vision == true,
                     onSend = { vm.send(input); input = "" },
                     onStop = vm::stop,
+                    onMic = {
+                        when (voice) {
+                            VoiceState.Recording -> vm.stopVoice()
+                            VoiceState.Idle -> micPermission.launch(Manifest.permission.RECORD_AUDIO)
+                            VoiceState.Transcribing -> Unit
+                        }
+                    },
+                    onAttachPhoto = { pickImage.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+                    onAttachDocument = { pickDoc.launch(arrayOf("application/pdf", "text/plain", "text/markdown", "text/*")) },
                 )
             }
         }
@@ -215,6 +284,28 @@ fun ChatScreen(onOpenModels: () -> Unit, vm: ChatViewModel = hiltViewModel()) {
             reportTarget = null
         }
     }
+    if (showDocs) AlertDialog(
+        onDismissRequest = { showDocs = false },
+        title = { Text("Chat with a document") },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState())) {
+                Text("Answers in this chat will use passages from the selected document. It never leaves your phone.", style = MaterialTheme.typography.bodySmall)
+                documents.forEach { d ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        RadioButton(selected = attachedDoc?.id == d.id, onClick = { vm.attachDocument(d.id); showDocs = false })
+                        Column(Modifier.weight(1f)) {
+                            Text(d.name, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text("${d.chunkCount} passages", style = MaterialTheme.typography.labelSmall)
+                        }
+                        IconButton(onClick = { vm.deleteDocument(d.id) }) { Icon(Icons.Default.Delete, "Delete document") }
+                    }
+                }
+                if (documents.isEmpty()) Text("No documents yet.", Modifier.padding(top = 8.dp))
+            }
+        },
+        confirmButton = { TextButton(onClick = { showDocs = false; pickDoc.launch(arrayOf("application/pdf", "text/plain", "text/markdown", "text/*")) }) { Text("Import PDF / TXT") } },
+        dismissButton = { if (attachedDoc != null) TextButton(onClick = { vm.attachDocument(null); showDocs = false }) { Text("Detach") } else TextButton(onClick = { showDocs = false }) { Text("Close") } },
+    )
     deleteConv?.let { c ->
         ConfirmDialog("Delete chat?", "\"${c.title}\" and all its messages will be deleted from this device.",
             onDismiss = { deleteConv = null }, onConfirm = { vm.deleteConversation(c.id) })
@@ -239,6 +330,8 @@ private fun MessageBubble(
     onRegenerate: () -> Unit,
     onDelete: () -> Unit,
     onReport: () -> Unit,
+    speaking: Boolean,
+    onSpeak: () -> Unit,
 ) {
     val isUser = message.role == Role.USER
     Column(Modifier.fillMaxWidth(), horizontalAlignment = if (isUser) Alignment.End else Alignment.Start) {
@@ -250,7 +343,13 @@ private fun MessageBubble(
             Box(Modifier.padding(12.dp)) {
                 when {
                     message.reported -> Text("You reported this reply. It is hidden.", style = MaterialTheme.typography.bodySmall)
-                    isUser -> SelectionContainer { Text(message.content) }
+                    isUser -> Column {
+                        message.imagePath?.let { p ->
+                            val bmp by rememberBitmap(p, 512)
+                            bmp?.let { Image(it.asImageBitmap(), "Attached photo", Modifier.padding(bottom = 6.dp).size(160.dp).clip(RoundedCornerShape(10.dp)), contentScale = ContentScale.Crop) }
+                        }
+                        SelectionContainer { Text(message.content) }
+                    }
                     liveText != null -> {
                         val visible = ThinkTags.strip(liveText)
                         when {
@@ -263,6 +362,14 @@ private fun MessageBubble(
                 }
             }
         }
+        if (!isUser && liveText == null && !message.reported) message.sources?.let { src ->
+            var open by remember { mutableStateOf(false) }
+            Text(
+                if (open) "Sources ▲\n$src" else "Sources ▼",
+                style = MaterialTheme.typography.labelSmall,
+                modifier = Modifier.widthIn(max = 600.dp).clickable { open = !open }.padding(4.dp),
+            )
+        }
         if (liveText == null && !message.reported) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (message.status == MessageStatus.STOPPED) Text("Stopped", style = MaterialTheme.typography.labelSmall)
@@ -270,6 +377,7 @@ private fun MessageBubble(
                 SmallAction(Icons.Default.Share, "Share", onShare)
                 if (isLastAssistant && !generating) SmallAction(Icons.Default.Refresh, "Regenerate", onRegenerate)
                 if (!generating) SmallAction(Icons.Default.Delete, "Delete", onDelete)
+                if (!isUser) SmallAction(if (speaking) Icons.Default.StopCircle else Icons.AutoMirrored.Filled.VolumeUp, if (speaking) "Stop reading" else "Read aloud", onSpeak)
                 if (!isUser) SmallAction(Icons.Default.Flag, "Report", onReport)
             }
         }
@@ -287,22 +395,43 @@ private fun InputBar(
     onTextChange: (String) -> Unit,
     enabled: Boolean,
     generating: Boolean,
+    hasAttachment: Boolean,
+    voice: VoiceState,
+    visionModel: Boolean,
     onSend: () -> Unit,
     onStop: () -> Unit,
+    onMic: () -> Unit,
+    onAttachPhoto: () -> Unit,
+    onAttachDocument: () -> Unit,
 ) {
+    var menu by remember { mutableStateOf(false) }
     Row(
         Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface).padding(8.dp),
         verticalAlignment = Alignment.Bottom,
     ) {
+        Box {
+            IconButton(onClick = { menu = true }, enabled = enabled && !generating) { Icon(Icons.Default.AddCircleOutline, "Attach") }
+            DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                DropdownMenuItem(
+                    text = { Text(if (visionModel) "Photo" else "Photo (needs Gemma 4 E2B)") },
+                    leadingIcon = { Icon(Icons.Default.Image, null) },
+                    onClick = { menu = false; onAttachPhoto() },
+                )
+                DropdownMenuItem(text = { Text("Document (PDF / TXT)") }, leadingIcon = { Icon(Icons.Default.Description, null) }, onClick = { menu = false; onAttachDocument() })
+            }
+        }
         OutlinedTextField(
             value = text, onValueChange = onTextChange, enabled = enabled,
-            placeholder = { Text("Message") }, maxLines = 6,
+            placeholder = { Text(when (voice) { VoiceState.Recording -> "Listening… tap ■ when done"; VoiceState.Transcribing -> "Transcribing…"; else -> "Message" }) },
+            maxLines = 6,
             modifier = Modifier.weight(1f),
         )
-        if (generating) {
-            FilledIconButton(onClick = onStop, modifier = Modifier.padding(start = 8.dp)) { Icon(Icons.Default.Stop, "Stop") }
-        } else {
-            FilledIconButton(onClick = onSend, enabled = enabled && text.isNotBlank(), modifier = Modifier.padding(start = 8.dp)) {
+        when {
+            generating -> FilledIconButton(onClick = onStop, modifier = Modifier.padding(start = 8.dp)) { Icon(Icons.Default.Stop, "Stop") }
+            voice == VoiceState.Transcribing -> Box(Modifier.padding(start = 8.dp).size(40.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp) }
+            voice == VoiceState.Recording -> FilledIconButton(onClick = onMic, modifier = Modifier.padding(start = 8.dp)) { Icon(Icons.Default.Stop, "Stop recording") }
+            text.isBlank() && !hasAttachment -> IconButton(onClick = onMic, enabled = enabled, modifier = Modifier.padding(start = 4.dp)) { Icon(Icons.Default.Mic, "Voice input") }
+            else -> FilledIconButton(onClick = onSend, enabled = enabled, modifier = Modifier.padding(start = 8.dp)) {
                 Icon(Icons.AutoMirrored.Filled.Send, "Send")
             }
         }

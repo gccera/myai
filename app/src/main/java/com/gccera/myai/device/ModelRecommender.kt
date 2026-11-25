@@ -9,6 +9,7 @@ data class Recommendation(
     val chat: ModelSpec?,
     val image: ModelSpec?,
     val notes: List<String>,
+    val code: ModelSpec? = null,
 )
 
 /**
@@ -38,6 +39,8 @@ object ModelRecommender {
         }
         val chat = best(ModelType.CHAT)
         val image = best(ModelType.IMAGE)
+        // Coding: Qwen2.5-Coder 1.5B everywhere; the 7B model only on 12 GB+ phones (its minRamGb).
+        val code = best(ModelType.CODE)
 
         if (!device.supportsChatEngine) notes += "This phone's CPU (32-bit only) isn't supported by the on-device chat engine."
         if (device.isLowRamDevice) notes += "Android marks this as a low-RAM device; only the smallest models are suitable."
@@ -45,6 +48,6 @@ object ModelRecommender {
         else if (fit(image, device) == Fit.MAY_BE_SLOW) notes += "Image generation will work but may be slow or fail if other apps are open."
         val gb = 1024L * 1024 * 1024
         if (device.freeStorageBytes < 2 * gb) notes += "Less than 2 GB of free storage: free up space before downloading models."
-        return Recommendation(chat, image, notes)
+        return Recommendation(chat, image, notes, code)
     }
 }

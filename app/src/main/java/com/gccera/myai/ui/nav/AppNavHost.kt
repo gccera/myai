@@ -24,7 +24,11 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import androidx.compose.material.icons.filled.Code
+import androidx.compose.material.icons.filled.Handyman
 import com.gccera.myai.ui.chat.ChatScreen
+import com.gccera.myai.ui.code.CodeScreen
+import com.gccera.myai.ui.tools.ToolsScreen
 import com.gccera.myai.ui.gallery.GalleryDetailScreen
 import com.gccera.myai.ui.gallery.GalleryScreen
 import com.gccera.myai.ui.image.ImageScreen
@@ -42,17 +46,21 @@ object Routes {
     const val GALLERY_DETAIL = "gallery/{id}"
     const val MODELS = "models"
     const val SETTINGS = "settings"
+    const val CODE = "code"
+    const val TOOLS = "tools"
+    const val MODELS_TAB = "models?tab={tab}"
     const val LICENSES = "licenses"
     const val PRIVACY = "privacy"
 }
 
 private data class Tab(val route: String, val label: String, val icon: ImageVector)
 
+// Five tabs max (Material guidance). Gallery opens from Image/Tools; Models from Settings and empty states.
 private val tabs = listOf(
     Tab(Routes.CHAT, "Chat", Icons.AutoMirrored.Filled.Chat),
     Tab(Routes.IMAGE, "Image", Icons.Default.Image),
-    Tab(Routes.GALLERY, "Gallery", Icons.Default.PhotoLibrary),
-    Tab(Routes.MODELS, "Models", Icons.Default.Memory),
+    Tab(Routes.CODE, "Code", Icons.Default.Code),
+    Tab(Routes.TOOLS, "Tools", Icons.Default.Handyman),
     Tab(Routes.SETTINGS, "Settings", Icons.Default.Settings),
 )
 
@@ -83,15 +91,28 @@ fun AppNavHost(onboardingDone: Boolean) {
                     nav.navigate(Routes.CHAT) { popUpTo(Routes.ONBOARDING) { inclusive = true } }
                 })
             }
-            composable(Routes.CHAT) { ChatScreen(onOpenModels = { nav.switchTab(Routes.MODELS) }) }
-            composable(Routes.IMAGE) { ImageScreen(onOpenModels = { nav.switchTab(Routes.MODELS) }) }
-            composable(Routes.GALLERY) { GalleryScreen(onOpen = { id -> nav.navigate("gallery/$id") }) }
-            composable(Routes.GALLERY_DETAIL, arguments = listOf(navArgument("id") { type = NavType.LongType })) {
-                GalleryDetailScreen(id = it.arguments?.getLong("id") ?: 0L, onBack = { nav.popBackStack() })
+            composable(Routes.CHAT) { ChatScreen(onOpenModels = { nav.navigate("models?tab=0") }) }
+            composable(Routes.IMAGE) {
+                ImageScreen(onOpenModels = { nav.navigate("models?tab=2") }, onOpenGallery = { nav.navigate(Routes.GALLERY) })
             }
-            composable(Routes.MODELS) { ModelsScreen() }
+            composable(Routes.CODE) { CodeScreen(onOpenModels = { nav.navigate("models?tab=1") }) }
+            composable(Routes.TOOLS) {
+                ToolsScreen(onOpenGallery = { nav.navigate(Routes.GALLERY) }, onOpenImage = { id -> nav.navigate("gallery/$id") })
+            }
+            composable(Routes.GALLERY) { GalleryScreen(onOpen = { id -> nav.navigate("gallery/$id") }, onBack = { nav.popBackStack() }) }
+            composable(Routes.GALLERY_DETAIL, arguments = listOf(navArgument("id") { type = NavType.LongType })) {
+                GalleryDetailScreen(
+                    id = it.arguments?.getLong("id") ?: 0L,
+                    onBack = { nav.popBackStack() },
+                    onOpen = { newId -> nav.navigate("gallery/$newId") { popUpTo(Routes.GALLERY_DETAIL) { inclusive = true } } },
+                )
+            }
+            composable(Routes.MODELS_TAB, arguments = listOf(navArgument("tab") { type = NavType.IntType; defaultValue = 0 })) {
+                ModelsScreen(onBack = { nav.popBackStack() }, initialTab = it.arguments?.getInt("tab") ?: 0)
+            }
             composable(Routes.SETTINGS) {
                 SettingsScreen(
+                    onOpenModels = { nav.navigate("models?tab=0") },
                     onOpenLicenses = { nav.navigate(Routes.LICENSES) },
                     onOpenPrivacy = { nav.navigate(Routes.PRIVACY) },
                     onDataCleared = {

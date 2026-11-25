@@ -120,7 +120,7 @@ class LlmEngine private constructor(
             prompt = "Language: $language\n```\n$before<CURSOR>$after\n```",
             params = GenerationParams(CODE_COMPLETION_SYSTEM, temperature = 0.1f, topK = 1, topP = 1f, maxTokens = 64),
         )
-        return cleanCompletion(raw, before, after, maxLines)
+        return CodeCompletionText.clean(raw, before, after, maxLines)
     }
 
     private fun newConversation(params: GenerationParams, history: List<ChatTurn>): Conversation {
@@ -198,21 +198,6 @@ class LlmEngine private constructor(
             "You are a code completion engine. The user shows code with a <CURSOR> marker. Reply with ONLY " +
                 "the code to insert at <CURSOR> (at most 3 lines) so the code is correct. No explanations, " +
                 "no markdown, and do not repeat code that is already before or after the cursor."
-
-        /** Removes fences/think tags, the <CURSOR> marker, and any text the model echoed from the context. */
-        fun cleanCompletion(raw: String, before: String, after: String, maxLines: Int): String {
-            var s = raw.replace(Regex("(?s)<think>.*?</think>"), "")
-            s = Regex("(?s)```[a-zA-Z0-9_+-]*\\n?(.*?)(```|$)").find(s)?.groupValues?.get(1) ?: s
-            s = s.replace("<CURSOR>", "").trimEnd()
-            // Drop an echoed copy of the current line's beginning.
-            val lineStart = before.substringAfterLast('\n')
-            if (lineStart.isNotBlank() && s.startsWith(lineStart)) s = s.removePrefix(lineStart)
-            else if (lineStart.isNotBlank() && s.trimStart().startsWith(lineStart.trim())) s = s.trimStart().removePrefix(lineStart.trim())
-            // Stop where the model starts repeating the code after the cursor.
-            val nextLine = after.trimStart('\n').substringBefore('\n').trim()
-            val lines = s.lines().takeWhile { nextLine.isEmpty() || it.trim() != nextLine }
-            return lines.take(maxLines).joinToString("\n").trimEnd()
-        }
 
         private val CHAT_PENALTY = RepetitionPenaltyConfig(repetitionPenalty = 1.05f)
         private val ONE_SHOT_PENALTY = RepetitionPenaltyConfig(repetitionPenalty = 1.15f)

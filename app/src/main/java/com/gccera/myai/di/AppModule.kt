@@ -30,11 +30,14 @@ object AppModule {
 
     @Provides @Singleton
     fun database(@ApplicationContext ctx: Context): AppDatabase =
-        Room.databaseBuilder(ctx, AppDatabase::class.java, "myai.db").build()
+        Room.databaseBuilder(ctx, AppDatabase::class.java, "myai.db")
+            .addMigrations(AppDatabase.MIGRATION_1_2)
+            .build()
 
     @Provides fun chatDao(db: AppDatabase): ChatDao = db.chatDao()
     @Provides fun imageDao(db: AppDatabase): ImageDao = db.imageDao()
     @Provides fun reportDao(db: AppDatabase): ReportDao = db.reportDao()
+    @Provides fun documentDao(db: AppDatabase): com.gccera.myai.data.db.DocumentDao = db.documentDao()
 
     @Provides @Singleton
     fun workManager(@ApplicationContext ctx: Context): WorkManager = WorkManager.getInstance(ctx)

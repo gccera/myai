@@ -76,6 +76,8 @@ fun OnboardingScreen(onDone: () -> Unit, vm: OnboardingViewModel = hiltViewModel
                 RecommendedModel("Chat", s.recommendation.chat, s.queued, vm::download)
                 HorizontalDivider()
                 RecommendedModel("Image", s.recommendation.image, s.queued, vm::download)
+                HorizontalDivider()
+                RecommendedModel("Code", s.recommendation.code, s.queued, vm::download)
                 s.message?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
                 Text("Downloads continue in the background. Use Wi-Fi: models are large. You can change models anytime in the Models tab.",
                     style = MaterialTheme.typography.bodySmall)

@@ -17,6 +17,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.IconButton
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Lock
@@ -68,26 +70,36 @@ import com.gccera.myai.util.formatBytes
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ModelsScreen(vm: ModelsViewModel = hiltViewModel()) {
+fun ModelsScreen(onBack: (() -> Unit)? = null, initialTab: Int = 0, vm: ModelsViewModel = hiltViewModel()) {
     val entries by vm.entries.collectAsStateWithLifecycle()
     val settings by vm.settings.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
-    var tab by rememberSaveable { mutableStateOf(0) }
+    var tab by rememberSaveable { mutableStateOf(initialTab) }
     var showAdd by remember { mutableStateOf(false) }
     var licenseFor by remember { mutableStateOf<ModelLicense?>(null) }
     var deleteFor by remember { mutableStateOf<ModelSpec?>(null) }
 
     LaunchedEffect(Unit) { vm.messages.collect { snackbar.showSnackbar(it) } }
 
-    val type = if (tab == 0) ModelType.CHAT else ModelType.IMAGE
-    val activeId = if (type == ModelType.CHAT) settings?.activeChatModelId else settings?.activeImageModelId
+    val type = TABS[tab].first
+    val activeId = when (type) {
+        ModelType.CHAT -> settings?.activeChatModelId
+        ModelType.CODE -> settings?.activeCodeModelId
+        ModelType.IMAGE -> settings?.activeImageModelId
+        ModelType.TOOL -> null
+    }
     val visible = entries.filter { it.spec.type == type }
     // If the user never picked one, the first installed model is the active one.
-    val effectiveActive = activeId?.takeIf { id -> visible.any { it.spec.id == id && it.installed } }
+    val effectiveActive = if (type == ModelType.TOOL) null else activeId?.takeIf { id -> visible.any { it.spec.id == id && it.installed } }
         ?: visible.firstOrNull { it.installed }?.spec?.id
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Models") }) },
+        topBar = {
+            TopAppBar(
+                title = { Text("Models") },
+                navigationIcon = { onBack?.let { IconButton(onClick = it) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } } },
+            )
+        },
         snackbarHost = { SnackbarHost(snackbar) },
         floatingActionButton = {
             ExtendedFloatingActionButton(onClick = { showAdd = true }, icon = { Icon(Icons.Default.Add, null) }, text = { Text("Custom") })
@@ -95,9 +107,12 @@ fun ModelsScreen(vm: ModelsViewModel = hiltViewModel()) {
     ) { pad ->
         Column(Modifier.padding(pad).fillMaxSize()) {
             TabRow(selectedTabIndex = tab) {
-                Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text("Chat") })
-                Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text("Image") })
+                TABS.forEachIndexed { i, (_, label) -> Tab(selected = tab == i, onClick = { tab = i }, text = { Text(label) }) }
             }
+            if (type == ModelType.TOOL) Text(
+                "Small helper models: voice input, document search, upscaling and background removal. Each feature asks for its model when needed.",
+                style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+            )
             Text(
                 "Device: ${vm.device.ramClassGb} GB RAM class · ${formatBytes(vm.device.freeStorageBytes)} free. " +
                     "Models download from Hugging Face and run fully offline.",
@@ -110,6 +125,7 @@ fun ModelsScreen(vm: ModelsViewModel = hiltViewModel()) {
                         entry = entry,
                         fit = ModelRecommender.fit(entry.spec, vm.device),
                         isActive = entry.spec.id == effectiveActive,
+                        isTool = type == ModelType.TOOL,
                         onDownload = { vm.download(entry.spec) },
                         onPause = { vm.pause(entry.spec) },
                         onDelete = { deleteFor = entry.spec },
@@ -141,6 +157,7 @@ private fun ModelCard(
     entry: ModelEntry,
     fit: Fit,
     isActive: Boolean,
+    isTool: Boolean,
     onDownload: () -> Unit,
     onPause: () -> Unit,
     onDelete: () -> Unit,
@@ -171,7 +188,7 @@ private fun ModelCard(
                 if (spec.requiresHfToken) AssistChip(onClick = {}, label = { Text("HF token") }, leadingIcon = { Icon(Icons.Default.Lock, null, Modifier.size(16.dp)) })
             }
             Spacer(Modifier.padding(4.dp))
-            DownloadRow(entry.state, isActive, onDownload, onPause, onDelete, onUse)
+            DownloadRow(entry.state, isActive, isTool, onDownload, onPause, onDelete, onUse)
         }
     }
 }
@@ -180,6 +197,7 @@ private fun ModelCard(
 private fun DownloadRow(
     state: DownloadState,
     isActive: Boolean,
+    isTool: Boolean,
     onDownload: () -> Unit,
     onPause: () -> Unit,
     onDelete: () -> Unit,
@@ -220,12 +238,15 @@ private fun DownloadRow(
             }
         }
         DownloadState.Installed -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (isActive) FilledTonalButton(onClick = {}, enabled = false) { Text("Active") }
+            if (isTool) FilledTonalButton(onClick = {}, enabled = false) { Text("Installed") }
+            else if (isActive) FilledTonalButton(onClick = {}, enabled = false) { Text("Active") }
             else Button(onClick = onUse) { Text("Use") }
             OutlinedButton(onClick = onDelete) { Text("Delete") }
         }
     }
 }
+
+private val TABS = listOf(ModelType.CHAT to "Chat", ModelType.CODE to "Code", ModelType.IMAGE to "Image", ModelType.TOOL to "Tools")
 
 @Composable
 fun LicenseDialog(license: ModelLicense, text: String?, onDismiss: () -> Unit) {
@@ -254,7 +275,8 @@ private fun AddCustomModelDialog(
     onAdd: (String, ModelType, String, String, String, String) -> Unit,
 ) {
     var name by remember { mutableStateOf("") }
-    var image by remember { mutableStateOf(false) }
+    var kind by remember { mutableStateOf(ModelType.CHAT) }
+    val image = kind == ModelType.IMAGE
     var url by remember { mutableStateOf("") }
     var sha by remember { mutableStateOf("") }
     var lic by remember { mutableStateOf("") }
@@ -265,8 +287,9 @@ private fun AddCustomModelDialog(
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    if (!image) Button(onClick = {}) { Text("Chat") } else OutlinedButton(onClick = { image = false }) { Text("Chat") }
-                    if (image) Button(onClick = {}) { Text("Image") } else OutlinedButton(onClick = { image = true }) { Text("Image") }
+                    listOf(ModelType.CHAT to "Chat", ModelType.CODE to "Code", ModelType.IMAGE to "Image").forEach { (t, l) ->
+                        if (kind == t) Button(onClick = {}) { Text(l) } else OutlinedButton(onClick = { kind = t }) { Text(l) }
+                    }
                 }
                 Text(
                     if (image) "Hugging Face base URL of a diffusers ONNX export (standard ONNX ops only), e.g. https://huggingface.co/org/repo/resolve/<commit>"
@@ -283,7 +306,7 @@ private fun AddCustomModelDialog(
         },
         confirmButton = {
             TextButton(enabled = name.isNotBlank() && url.isNotBlank(), onClick = {
-                onAdd(name.trim(), if (image) ModelType.IMAGE else ModelType.CHAT, url, sha, lic, licUrl)
+                onAdd(name.trim(), kind, url, sha, lic, licUrl)
             }) { Text("Add") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },

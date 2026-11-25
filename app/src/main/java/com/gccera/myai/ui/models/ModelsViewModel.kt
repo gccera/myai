@@ -67,7 +67,7 @@ class ModelsViewModel @Inject constructor(
 
     fun setActive(spec: ModelSpec) = viewModelScope.launch {
         repo.setActive(spec)
-        _messages.send("${spec.name} is now the active ${if (spec.type == ModelType.CHAT) "chat" else "image"} model")
+        _messages.send("${spec.name} is now the active ${spec.type.name.lowercase()} model")
     }
 
     fun removeCustom(spec: ModelSpec) = viewModelScope.launch {
@@ -82,7 +82,7 @@ class ModelsViewModel @Inject constructor(
                 require(url.startsWith("https://")) { "URL must start with https://" }
                 require(sha256.isBlank() || sha256.matches(Regex("[0-9a-fA-F]{64}"))) { "SHA-256 must be 64 hex characters" }
                 val id = "custom-" + name.lowercase().replace(Regex("[^a-z0-9]+"), "-").trim('-')
-                val spec = if (type == ModelType.CHAT) {
+                val spec = if (type == ModelType.CHAT || type == ModelType.CODE) {
                     ModelSpec(
                         id = id, type = type, name = name, description = "Custom model", params = "custom",
                         license = ModelLicense("custom", licenseName.ifBlank { "Unknown" }, licenseUrl),

@@ -60,7 +60,7 @@ class ModelSessionManager @Inject constructor(
     val state: StateFlow<SessionState> = _state.asStateFlow()
 
     suspend fun <T> withChat(spec: ModelSpec, task: String, block: suspend (LlmEngine) -> T): T {
-        require(spec.type == ModelType.CHAT)
+        require(spec.type == ModelType.CHAT || spec.type == ModelType.CODE)
         return exclusive(task) {
             val engine = ensureChat(spec)
             _state.value = SessionState.Busy(spec, task)
@@ -74,6 +74,19 @@ class ModelSessionManager @Inject constructor(
             val pipeline = ensureImage(spec)
             _state.value = SessionState.Busy(spec, task)
             try { block(pipeline) } finally { _state.value = readyState() }
+        }
+    }
+
+    /**
+     * Runs a small helper model (Whisper, MiniLM, Swin2SR, MODNet; 25–80 MB). These are created
+     * inside [block] and closed after use. On phones under 8 GB the big model is unloaded first.
+     */
+    suspend fun <T> withTool(spec: ModelSpec, task: String, block: suspend (java.io.File) -> T): T {
+        require(spec.type == ModelType.TOOL)
+        return exclusive(task) {
+            if (device.inspect().ramClassGb < 8) withContext(Dispatchers.IO) { closeLoaded() }
+            _state.value = SessionState.Busy(spec, task)
+            try { withContext(Dispatchers.Default) { block(storage.dirFor(spec)) } } finally { _state.value = readyState() }
         }
     }
 
